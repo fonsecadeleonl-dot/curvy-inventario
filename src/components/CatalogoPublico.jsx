@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
-import { fmt, Icon } from "../utils.jsx";
+import { fmt, Icon, LoaderInteractivo } from "../utils.jsx";
 
 const NUMERO_WA = "573017886206";
 const ORDEN_TALLAS = ["XS","S","M","L","XL","0XL","1XL","2XL","3XL","4XL","5XL"];
@@ -260,15 +260,7 @@ export default function CatalogoPublico({ onLoginClick }) {
     window.open(`https://wa.me/${NUMERO_WA}?text=${encodeURIComponent(txt)}`, "_blank");
   };
 
-  if (cargando) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAF7F4" }}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "'Fraunces', serif", fontSize: 32, color: "#C2185B", marginBottom: 12 }}>Curvy</div>
-        <div style={{ width: 36, height: 36, border: "3px solid #F8BBD9", borderTopColor: "#C2185B", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    </div>
-  );
+  if (cargando) return <LoaderInteractivo />;
 
   return (
     <div style={{ minHeight: "100vh", background: "#FAF7F4", fontFamily: "'DM Sans', sans-serif" }}>

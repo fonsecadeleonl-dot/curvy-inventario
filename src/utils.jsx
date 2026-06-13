@@ -103,15 +103,72 @@ export const LoaderInteractivo = () => {
       "Flotando entre nubes y soundtrack de anime ☁️🎶", "Cazando criaturas mágicas imaginarias 🦊✨", "Preparando mi comeback de temporada 🎬🌷",
       "Tomando descansos estratégicos como una heroína 🌙💖", "Brillando con energía de personaje favorito ⭐🎀", "Haciendo pactos con gatos misteriosos 🐈✨",
       "Manifestando un episodio feliz 🌸🎬", "Viviendo mi arco de crecimiento personal 🌷📖", "Protegiendo mi energía como reliquia legendaria 💎✨",
-      "Siendo una waifu de alto valor emocional 🎀"
+      "Siendo una waifu de alto valor emocional 🎀",
+      // ── acciones femeninas cotidianas ──
+      "Eligiendo outfit número siete del día 👗✨", "Pintándome las uñas 💅🌸", "Buscando el labial que perdí 💄🔍",
+      "Haciéndome las cejas con bisturí emocional 🪮✨", "Poniéndome crema como si fuera ritual sagrado 🧴💖",
+      "Organizando el closet que va a quedar igual 🗂️", "Tomando foto al espejo diez veces 📸💁‍♀️",
+      "Eligiendo los aretes del día como si fuera Oscar 💎✨", "Poniéndome mascarilla y asustando al gato 🎭🐈",
+      "Cantando en la ducha sin vergüenza 🎤🚿", "Eligiendo playlist según mi humor del momento 🎧✨",
+      "Mandando vocal de 11 minutos 🎙️💬", "Viendo outfits de Pinterest que nunca voy a usar 📌✨",
+      "Probando la fragancia del día como sommelier 🌸👃", "Editando la foto antes de subirla 24 minutos 📱✨",
+      "Consultando el horóscopo para tomar decisiones 🔮⭐", "Mandando memes a las amigas a las 2am 🤣💕",
+      "Haciéndome un moño que quedó perfecto de milagro 🧶✨", "Cambiando el fondo de pantalla del celular 📱🎀",
+      "Revisando wishlist que nunca voy a comprar 🛍️💸", "Mirando TikToks de outfits con piernas cruzadas 📱🛋️",
+      "Probándome 8 outfits para ir al supermercado 👗👗", "Guardando recetas saludables que nunca voy a hacer 🥗📱",
+      "Planeando viaje sin fecha ni presupuesto ✈️✨", "Comprando skincare que no necesito pero lo merezco 🧴💅",
+      "Haciendo lista de propósitos del mes el día 28 📝✨", "Actualizando playlist del crush que ya no existe 💕🎵",
+      "Buscando el perfume que huele a dinero 💸🌹", "Eligiendo canción para llorar con estilo 🎵😭✨",
+      "Viendo tutoriales de maquillaje que no puedo replicar 💄📱", "Guardando recetas de cocina para no cocinarlas 👩‍🍳📱",
+      "Haciendo ritual de skincare de 12 pasos a las 11pm 🧴🌙", "Decidiendo qué bolso usar en base a mi chakra 👜✨",
+      "Revisando notificaciones tres veces en un minuto 📱🔄", "Cambiando de opinión sobre el outfit de mañana 👗🤔",
+      "Guardando audios de amor propio para no escucharlos 🎙️💕", "Cantando a todo volumen con la ventana abajo 🚗🎤",
+      "Buscando el mejor ángulo como profesional 📸🌟", "Mirando el closet como si no supiera qué hay 👀👗",
+      "Retocando el labial que quedaba perfecto 💄✨", "Haciéndome un top knot y llamándolo 'look casual' 🧶💁‍♀️",
+      "Perfumando hasta las pestañas 🌸✨", "Eligiendo serie para no ver porque me quedé dormida 📺😴",
+      "Respondiendo el mensaje 4 horas después 'acabo de ver' 📱😅", "Reorganizando carpeta de memes 🗂️🤣",
+      "Guardando pines de habitaciones que no tengo 📌🏠✨", "Comprando vela que huele a librería en lluvia 🕯️📚",
+      "Tomando cafecito con actitud de protagonista ☕💅", "Mirando fotos antiguas y diciendo 'qué bonita era' 📸💕",
+      "Haciendo lista de cosas que ya hice para tacharlas ✅📝", "Cantando en el carro como si hubiera cámara 🎤🚗",
+      "Comprando cuadernos aunque tenga diez sin usar 📓✨", "Redecorar el cuarto moviendo solo una cosa 🏠✨",
+      "Mandando sticker en vez de responder 🎀📱", "Pidiéndole al universo estacionamiento cercano 🅿️🙏✨",
+      "Eligiendo film de nail art por 40 minutos 💅🎨", "Haciendo GRWM mental antes de salir 💄✨",
+      "Rezando por el Wi-Fi de alguien más 📶🙏", "Abriendo el fridge esperando que aparezca algo nuevo 🧊🔍",
+      "Guardando screenshot de look para nunca usarlo 📸🗂️", "Tomando agua con limón y sintiéndome influencer 💧🍋✨",
+      "Eligiendo qué ver en Netflix en vez de dormir 🎬😴", "Leyendo reseñas de hotel que no voy a reservar 🏨✨",
+      "Buscando receta de brownie para no hacerlo 🍫📱", "Preguntándole a mi amiga si el mensaje sonó pasivo-agresivo 📱😬",
+      "Creando álbum de Spotify con nombre poético para 3 canciones 🎵✨", "Comprando planta que voy a olvidar regar 🌿💸",
+      "Dándole like a mis propias fotos desde otra cuenta 💅📱", "Dibujando 'ella' en el cuaderno de reuniones 📓✨",
+      "Probando si mi perfume es compatible con el del crush 🌹💕", "Haciendo yoga mental sin moverme del sofá 🧘‍♀️🛋️",
+      "Calculando cuánto pierdo si cancelo el gym hoy 🏋️‍♀️💸", "Eligiendo emoji de respuesta durante 3 minutos 💭📱",
+      "Buscando looks de 'chica que tiene todo bajo control' 👗✨", "Diciéndole a la planta que la amo 🌿💕",
+      "Escogiendo qué borrar del cel para la foto nueva 🗑️📱", "Probando si el labial dura con vaso de agua 💄💧",
+      "Buscando el pelo de un chip en el espejo 🪞🔍", "Oliendo ropa para ver si puede durar un día más 👃👗✨",
+      "Eligiendo color de esmalte como si cambiara mi destino 💅🔮", "Contando cuántos días quedan para el viernes 📅✨",
+      "Armando el carrito de compras online para no comprarlo 🛒💕", "Respondiendo encuesta de Netflix como si importara 📺📊",
+      "Borrando y reescribiendo caption cinco veces 📱✍️", "Tomando selfie sin flash y llamándolo 'natural' 📸🌿",
+      "Guardando memes de motivación que no aplico 💪📱", "Mandando corazón en vez de responder el mensaje largo 💕📱",
+      "Pidiendo opinión sobre el outfit a todas menos a quien me lo critiquen 👗💬", "Viendo reels de perritos cuando debería estar trabajando 🐾📱",
+      "Cantando en la cola del supermercado en voz baja 🎤🛒", "Eligiendo que el próximo lunes sí empiezo 📅💪✨",
+      "Buscando canción que escuché en tienda hace 3 años 🎵🔍", "Haciéndome spa en casa con lo que había en la cocina 🛁🍯✨",
+      "Tomando agua de moras y llamándolo detox 🫐💧✨", "Armando outfit de 'no me esforcé' que tardó 45 minutos 👗✨",
+      "Guardando número de pizza para 'emergencias' 🍕📱", "Eligiendo font del cartel que nadie va a ver 🖊️✨",
+      "Mirando si me queda bien el color morado 💜👗", "Hablando conmigo misma como si fuera entrevista 🎤💭✨",
+      "Buscando el clip de cabello en el fondo del bolso 👜🔍", "Organizando el bolso por tercera vez esta semana 👜✨",
+      "Descubriendo que tengo ropa que no sabía que tenía 🤩👗", "Prometiéndome que esta vez sí uso el diario 📔✨",
+      "Eligiendo vela aromática según mi estado emocional 🕯️🌸", "Mirando el cielo y haciendo petición específica ☁️🙏✨",
+      "Decidiendo si el mensaje fue leído o ignorado 📱👀", "Buscando video de ASMR de tiendas de ropa 🎧🛍️✨",
+      "Probando si el look dice 'busy but make it fashion' 💼👗✨"
     ];
+    const ciclo = setInterval(() => setMsg(frases[Math.floor(Math.random() * frases.length)]), 2200);
     setMsg(frases[Math.floor(Math.random() * frases.length)]);
+    return () => clearInterval(ciclo);
   }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--creme)', padding: 20, textAlign: 'center' }}>
-      <div className="pulsing" style={{ fontSize: 50, marginBottom: 20 }}>⏳</div>
-      <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 600, color: 'var(--rosa-deep)' }}>{msg}</p>
+      <div className="pulsing" style={{ fontSize: 50, marginBottom: 20 }}>💕</div>
+      <p style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 600, color: 'var(--rosa-deep)', maxWidth: 320, lineHeight: 1.4 }}>{msg}</p>
     </div>
   );
 };
