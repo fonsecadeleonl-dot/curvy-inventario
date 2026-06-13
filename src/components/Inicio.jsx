@@ -51,7 +51,7 @@ export default function Inicio({ prendas, ventas, facturas = [] }) {
                 return (
                   <div key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 12, background: urgente ? "#FFF3E0" : "#F3E5F5" }}>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--dark)", margin: 0 }}>{f.clienteCredito || "Sin nombre"}</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--dark)", margin: 0 }}>{f.clienteNombre || f.clienteCredito || "Sin nombre"}</p>
                       <p style={{ fontSize: 11, color: "var(--mid)", margin: "2px 0 0" }}>
                         {new Date(f.fecha).toLocaleDateString("es-CO")} · {f.ticketId?.slice(-6)}
                       </p>

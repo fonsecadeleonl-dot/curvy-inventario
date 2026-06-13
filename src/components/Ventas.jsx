@@ -2,6 +2,9 @@ import { useState, useMemo } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { fmt, fmtNum, parseNum, Icon, Badge, fmtFecha } from "../utils.jsx";
+import FacturaPDF from "./FacturaPDF.jsx";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export default function Ventas({ prendas, setPrendas, ventas, setVentas, facturas, setFacturas }) {
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -12,16 +15,18 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
   const [tallaSel, setTallaSel] = useState("");
   const [busquedaProducto, setBusquedaProducto] = useState("");
   const [formaPago, setFormaPago] = useState("Efectivo");
-  const [clienteCredito, setClienteCredito] = useState("");
-  
+  const [clienteNombre, setClienteNombre] = useState("");
+  const [clienteTelefono, setClienteTelefono] = useState("");
+
   const [busqueda, setBusqueda] = useState("");
-  const [filtroTiempo, setFiltroTiempo] = useState("todo"); 
+  const [filtroTiempo, setFiltroTiempo] = useState("todo");
 
   const [toast, setToast] = useState(null);
   const [ultimaVentaPdf, setUltimaVentaPdf] = useState(null);
   const [facturaAEliminar, setFacturaAEliminar] = useState(null);
   const [itemAEliminar, setItemAEliminar] = useState(null);
   const [mostrarModalImpresion, setMostrarModalImpresion] = useState(false);
+  const [generandoPDF, setGenerandoPDF] = useState(false);
 
   const prendaSel = prendas.find(p => p.codigo === codigoSel);
   const ordenTallas = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
@@ -30,7 +35,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
   const facturasCompletas = useMemo(() => {
     const lista = [...facturas];
     const ticketsOficiales = new Set(facturas.map(f => f.ticketId));
-    
+
     const ventasViejas = ventas.filter(v => !ticketsOficiales.has(v.ticketId) && !ticketsOficiales.has(v.id));
     const agrupadas = ventasViejas.reduce((acc, v) => {
       const tId = v.ticketId || v.id;
@@ -60,7 +65,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
         else if (filtroTiempo === "mes") coincideFecha = d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear();
       }
       return coincideTexto && coincideFecha;
-    }).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+    }).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
   }, [facturasCompletas, busqueda, filtroTiempo]);
 
   const totalFiltrado = facturasFiltradas.reduce((s, f) => s + Number(f.total), 0);
@@ -95,6 +100,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
     if (carrito.length === 0) return;
     const ticketId = `TK-${Date.now()}`;
     const fechaActual = new Date().toISOString();
+    const numeroFactura = facturas.filter(f => !f.esVieja).length + 1;
     let nuevasVentasLocal = [];
 
     try {
@@ -119,25 +125,61 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
       }
 
       const esCredito = formaPago === "Crédito";
-      const nuevaFactura = { ticketId, fecha: fechaActual, formaPago, total: totalCarrito, ...(esCredito ? { clienteCredito, estadoCredito: "abierto" } : {}), items: carrito.map(i => ({ cantidad: i.cantidad, descripcion: i.descripcion, talla: i.tallaSel || i.talla, precioFinal: i.precioFinal, codigo: i.codigo })) };
+      const nuevaFactura = {
+        ticketId,
+        fecha: fechaActual,
+        formaPago,
+        total: totalCarrito,
+        numeroFactura,
+        ...(clienteNombre ? { clienteNombre } : {}),
+        ...(clienteTelefono ? { clienteTelefono } : {}),
+        ...(esCredito ? { estadoCredito: "abierto" } : {}),
+        items: carrito.map(i => ({ cantidad: i.cantidad, descripcion: i.descripcion, talla: i.tallaSel || i.talla, precioFinal: i.precioFinal, codigo: i.codigo }))
+      };
       const facRef = await addDoc(collection(db, "facturas"), nuevaFactura);
-      
+
       setFacturas(f => [{ id: facRef.id, ...nuevaFactura }, ...f]);
       setVentas(v => [...nuevasVentasLocal, ...v]);
-      setUltimaVentaPdf({ ...nuevaFactura });
-      setCarrito([]); setMostrarForm(false); setClienteCredito("");
-      if (esCredito) {
-        showToast("✅ Crédito registrado");
-      } else {
-        setMostrarModalImpresion(true);
-      }
+      setUltimaVentaPdf({ id: facRef.id, ...nuevaFactura });
+      setCarrito([]); setMostrarForm(false); setClienteNombre(""); setClienteTelefono("");
+      setMostrarModalImpresion(true);
 
     } catch (error) { showToast("❌ Error al procesar", "danger"); }
   };
 
+  const generarFacturaPDF = async () => {
+    const el = document.getElementById("factura-pdf-render");
+    if (!el || !ultimaVentaPdf) return;
+    setGenerandoPDF(true);
+    try {
+      await document.fonts.ready;
+      await new Promise(r => setTimeout(r, 200));
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width / 2, canvas.height / 2] });
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2);
+      const num = String(ultimaVentaPdf.numeroFactura || 0).padStart(4, "0");
+      const nombre = ultimaVentaPdf.numeroFactura ? `Factura_CURVY-${num}.pdf` : `Factura_${ultimaVentaPdf.ticketId?.slice(-6)}.pdf`;
+      pdf.save(nombre);
+    } catch (e) { showToast("❌ Error generando PDF", "danger"); }
+    finally { setGenerandoPDF(false); }
+  };
+
+  const enviarWhatsApp = async () => {
+    if (!ultimaVentaPdf) return;
+    const telefono = ultimaVentaPdf.clienteTelefono || "";
+    const num = String(ultimaVentaPdf.numeroFactura || 0).padStart(4, "0");
+    const idFactura = ultimaVentaPdf.numeroFactura ? `CURVY-${num}` : ultimaVentaPdf.ticketId?.slice(-6);
+    const texto = `Hola! Aquí tienes tu factura *${idFactura}* de Curvy 💕\nTotal: *${fmt(ultimaVentaPdf.total)}*\nFecha: ${new Date(ultimaVentaPdf.fecha).toLocaleDateString("es-CO")}\n¡Gracias por tu compra, hermosa! 🌸`;
+    const url = telefono
+      ? `https://wa.me/57${telefono.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`
+      : `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank");
+  };
+
   const reImprimir = (factura) => {
     setUltimaVentaPdf(factura);
-    setTimeout(() => window.print(), 100); 
+    setTimeout(() => setMostrarModalImpresion(true), 100);
   };
 
   const confirmarEliminarVenta = async () => {
@@ -149,7 +191,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
         if (p && item.cantidad) {
           const nuevoStock = Number(p.stock) + Number(item.cantidad);
           await updateDoc(doc(db, "prendas", p.id), { stock: nuevoStock });
-          p.stock = nuevoStock; 
+          p.stock = nuevoStock;
         }
       }
       setPrendas(prendasRestauradas);
@@ -170,13 +212,11 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
     } catch (err) { showToast("❌ Error al eliminar", "danger"); }
   };
 
-  // NUEVO: Lógica de anulación parcial
   const confirmarEliminarItem = async () => {
     if (!itemAEliminar) return;
     const { factura, index, item } = itemAEliminar;
 
     try {
-      // 1. Restaurar stock de esa prenda
       const p = prendas.find(pr => pr.codigo === item.codigo || pr.descripcion === item.descripcion);
       if (p) {
         const nuevoStock = Number(p.stock) + Number(item.cantidad);
@@ -184,22 +224,18 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
         setPrendas(prev => prev.map(x => x.id === p.id ? { ...x, stock: nuevoStock } : x));
       }
 
-      // 2. Eliminar el registro individual de "ventas"
       const ventaDoc = ventas.find(v => (v.ticketId === factura.ticketId || v.id === factura.ticketId) && (v.codigo === item.codigo || v.descripcion === item.descripcion));
       if (ventaDoc) {
         await deleteDoc(doc(db, "ventas", ventaDoc.id));
         setVentas(prev => prev.filter(v => v.id !== ventaDoc.id));
       }
 
-      // 3. Recalcular la Factura Oficial
       if (!factura.esVieja) {
         const nuevosItems = factura.items.filter((_, i) => i !== index);
         if (nuevosItems.length === 0) {
-          // Si quitó la última prenda, borramos la factura completa
           await deleteDoc(doc(db, "facturas", factura.id));
           setFacturas(prev => prev.filter(f => f.id !== factura.id));
         } else {
-          // Si aún quedan prendas, actualizamos el nuevo total
           const nuevoTotal = nuevosItems.reduce((acc, i) => acc + (i.cantidad * i.precioFinal), 0);
           await updateDoc(doc(db, "facturas", factura.id), { items: nuevosItems, total: nuevoTotal });
           setFacturas(prev => prev.map(f => f.id === factura.id ? { ...f, items: nuevosItems, total: nuevoTotal } : f));
@@ -223,6 +259,13 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
       {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.tipo === "ok" ? "var(--dark)" : toast.tipo === "warn" ? "var(--warn)" : "var(--danger)", color: "var(--white)", padding: "10px 20px", borderRadius: 100, fontSize: 13, zIndex: 9999, boxShadow: "var(--shadow-lg)" }}>{toast.msg}</div>}
+
+      {/* FACTURA FUERA DE PANTALLA para html2canvas */}
+      {ultimaVentaPdf && (
+        <div style={{ position: "fixed", left: -9999, top: 0, zIndex: -1, pointerEvents: "none" }}>
+          <FacturaPDF factura={ultimaVentaPdf} />
+        </div>
+      )}
 
       {/* MODAL ELIMINAR FACTURA COMPLETA */}
       {facturaAEliminar && (
@@ -254,43 +297,47 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
         </div>
       )}
 
-      {/* MODAL CONFIRMACIÓN IMPRESIÓN */}
+      {/* MODAL PDF / FACTURA */}
       {mostrarModalImpresion && ultimaVentaPdf && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div className="animate" style={{ background: "white", padding: 30, borderRadius: 24, width: "90%", maxWidth: 360, textAlign: "center", boxShadow: "var(--shadow-lg)" }}>
-            <div style={{ background: "#E8F5E9", width: 60, height: 60, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }}>✅</div>
-            <h3 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", color: "var(--dark)", marginBottom: 6 }}>¡Venta registrada!</h3>
-            <p style={{ fontSize: 13, color: "var(--mid)", marginBottom: 24 }}>¿Deseas imprimir el recibo ahora?</p>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setMostrarModalImpresion(false)} style={{ flex: 1, background: "var(--border)", color: "var(--dark)", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>No, continuar</button>
-              <button onClick={() => { setMostrarModalImpresion(false); setTimeout(() => window.print(), 300); }} style={{ flex: 1, background: "var(--dark)", color: "white", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>🖨️ Imprimir</button>
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="animate" style={{ background: "white", padding: 30, borderRadius: 24, width: "90%", maxWidth: 380, textAlign: "center", boxShadow: "var(--shadow-lg)" }}>
+            <div style={{ background: "linear-gradient(135deg, #8B1A4D, #C2185B)", width: 64, height: 64, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }}>💕</div>
+            <h3 style={{ fontSize: 19, fontFamily: "'Fraunces', serif", color: "var(--dark)", marginBottom: 4 }}>¡Venta registrada!</h3>
+            {ultimaVentaPdf.numeroFactura && (
+              <p style={{ fontSize: 13, color: "var(--rosa-deep)", fontWeight: 700, marginBottom: 4 }}>
+                {`CURVY-${String(ultimaVentaPdf.numeroFactura).padStart(4, "0")}`}
+              </p>
+            )}
+            <p style={{ fontSize: 13, color: "var(--mid)", marginBottom: 24 }}>¿Qué deseas hacer con la factura?</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button
+                onClick={generarFacturaPDF}
+                disabled={generandoPDF}
+                style={{ background: "linear-gradient(135deg, var(--rosa-deep), var(--rosa))", color: "white", border: "none", padding: "13px", borderRadius: 12, fontWeight: 700, fontSize: 14, opacity: generandoPDF ? 0.7 : 1 }}
+              >
+                {generandoPDF ? "⏳ Generando PDF..." : "⬇️ Descargar PDF"}
+              </button>
+              {(ultimaVentaPdf.clienteTelefono || ultimaVentaPdf.clienteNombre) && (
+                <button
+                  onClick={enviarWhatsApp}
+                  style={{ background: "#25D366", color: "white", border: "none", padding: "13px", borderRadius: 12, fontWeight: 700, fontSize: 14 }}
+                >
+                  📱 Enviar por WhatsApp
+                </button>
+              )}
+              <button
+                onClick={() => setMostrarModalImpresion(false)}
+                style={{ background: "var(--border)", color: "var(--dark)", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}
+              >
+                Continuar
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* BLOQUE IMPRIMIR */}
-      {ultimaVentaPdf && (
-        <div id="recibo-imprimible" className="print-only">
-          <h2 style={{ textAlign: "center", borderBottom: "1px dashed black", paddingBottom: 10 }}>CURVY.VUP</h2>
-          <p><strong>Recibo:</strong> {ultimaVentaPdf.ticketId}</p>
-          <p><strong>Fecha:</strong> {new Date(ultimaVentaPdf.fecha).toLocaleString('es-CO')}</p>
-          <p><strong>Método:</strong> {ultimaVentaPdf.formaPago}</p>
-          <table style={{ width: "100%", marginTop: 20, textAlign: "left", borderCollapse: "collapse" }}>
-            <thead><tr style={{ borderBottom: "1px solid black" }}><th>Cant</th><th>Descripción</th><th style={{ textAlign: "right" }}>Total</th></tr></thead>
-            <tbody>
-              {ultimaVentaPdf.items.map((i, idx) => (
-                <tr key={idx}><td style={{padding:"8px 0"}}>{i.cantidad}</td><td>{i.descripcion} {i.talla ? `(${i.talla})` : ''}</td><td style={{ textAlign: "right" }}>{fmt(i.precioFinal * i.cantidad)}</td></tr>
-              ))}
-            </tbody>
-          </table>
-          <h3 style={{ textAlign: "right", marginTop: 20, borderTop: "1px dashed black", paddingTop: 10 }}>TOTAL: {fmt(ultimaVentaPdf.total)}</h3>
-          <p style={{ textAlign: "center", marginTop: 40 }}>¡Gracias por tu compra, hermosa! 💕</p>
-        </div>
-      )}
-
-      {/* BARRA SUPERIOR ELEGANTE */}
-      <div className="no-print" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: 'center', background: "var(--white)", padding: "16px 20px", borderRadius: 20, boxShadow: "var(--shadow)" }}>
+      {/* BARRA SUPERIOR */}
+      <div className="no-print" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", background: "var(--white)", padding: "16px 20px", borderRadius: 20, boxShadow: "var(--shadow)" }}>
         <div style={{ position: "relative", flex: "1 1 200px" }}>
           <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--mid)" }}><Icon name="search" size={16} /></span>
           <input placeholder="Buscar factura o prenda..." value={busqueda} onChange={e => setBusqueda(e.target.value)} disabled={mostrarForm} style={{ paddingLeft: 40 }} />
@@ -308,57 +355,60 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
       {!mostrarForm ? (
         <div className="animate no-print" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px" }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--mid)" }}>{facturasFiltradas.length} {facturasFiltradas.length === 1 ? 'registro' : 'registros'}</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--mid)" }}>{facturasFiltradas.length} {facturasFiltradas.length === 1 ? "registro" : "registros"}</p>
             <Badge variant="success">Total: {fmt(totalFiltrado)}</Badge>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
             {facturasFiltradas.length === 0 && <p style={{ fontSize: 13, color: "var(--mid)", padding: "10px" }}>No hay ventas en este filtro.</p>}
-            
-            {facturasFiltradas.map(f => (
-              <div key={f.id} style={{ background: "var(--white)", borderRadius: 16, padding: "18px", boxShadow: "var(--shadow)", border: "1px solid var(--border)", display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px dashed var(--border)", paddingBottom: 12, marginBottom: 12 }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)" }}>Factura {f.ticketId.substring(f.ticketId.length - 6)}</p>
-                      {f.esVieja && <span style={{fontSize: 9, background: "#FFF3E0", color: "var(--warn)", padding: "2px 6px", borderRadius: 4, fontWeight: 700}}>PRUEBA/ANTIGUA</span>}
-                      {f.formaPago === "Crédito" && f.estadoCredito === "abierto" && <span style={{fontSize: 9, background: "#F3E5F5", color: "#7B1FA2", padding: "2px 8px", borderRadius: 4, fontWeight: 700}}>💳 CRÉDITO ABIERTO</span>}
-                      {f.formaPago === "Crédito" && f.estadoCredito === "cerrado" && <span style={{fontSize: 9, background: "#E8F5E9", color: "var(--success)", padding: "2px 8px", borderRadius: 4, fontWeight: 700}}>✅ CRÉDITO COBRADO</span>}
+
+            {facturasFiltradas.map(f => {
+              const numStr = f.numeroFactura ? `CURVY-${String(f.numeroFactura).padStart(4, "0")}` : `TK-${f.ticketId?.slice(-6)}`;
+              const nombreCliente = f.clienteNombre || f.clienteCredito || "";
+              return (
+                <div key={f.id} style={{ background: "var(--white)", borderRadius: 16, padding: "18px", boxShadow: "var(--shadow)", border: "1px solid var(--border)", display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px dashed var(--border)", paddingBottom: 12, marginBottom: 12 }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)" }}>{numStr}</p>
+                        {f.esVieja && <span style={{ fontSize: 9, background: "#FFF3E0", color: "var(--warn)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>PRUEBA/ANTIGUA</span>}
+                        {f.formaPago === "Crédito" && f.estadoCredito === "abierto" && <span style={{ fontSize: 9, background: "#F3E5F5", color: "#7B1FA2", padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>💳 CRÉDITO ABIERTO</span>}
+                        {f.formaPago === "Crédito" && f.estadoCredito === "cerrado" && <span style={{ fontSize: 9, background: "#E8F5E9", color: "var(--success)", padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>✅ CRÉDITO COBRADO</span>}
+                      </div>
+                      {nombreCliente && <p style={{ fontSize: 12, fontWeight: 600, color: "#7B1FA2", marginTop: 2 }}>👤 {nombreCliente}</p>}
+                      <p style={{ fontSize: 11, color: "var(--mid)", marginTop: 2 }}>{fmtFecha(f.fecha)} · {new Date(f.fecha).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
-                    {f.clienteCredito && <p style={{ fontSize: 12, fontWeight: 600, color: "#7B1FA2", marginTop: 2 }}>👤 {f.clienteCredito}</p>}
-                    <p style={{ fontSize: 11, color: "var(--mid)", marginTop: 2 }}>{fmtFecha(f.fecha)} · {new Date(f.fecha).toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'})}</p>
+                    <Badge variant="default">{f.formaPago}</Badge>
                   </div>
-                  <Badge variant="default">{f.formaPago}</Badge>
-                </div>
-                
-                <div style={{ fontSize: 12, color: "var(--mid)", flex: 1 }}>
-                  {f.items.map((item, idx) => (
-                    <div key={idx} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6}}>
-                      <span>{item.cantidad}x {item.descripcion} {item.talla ? `(${item.talla})` : ''}</span>
-                      {/* BOTÓN CRUZ PARA ANULAR UNA SOLA PRENDA */}
-                      <button onClick={() => setItemAEliminar({ factura: f, index: idx, item })} style={{ background: "transparent", border: "none", color: "var(--danger)", padding: "2px 6px", cursor: "pointer", fontSize: 16, fontWeight: "bold" }}>×</button>
-                    </div>
-                  ))}
-                </div>
-                
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-                  <p style={{ fontSize: 16, fontWeight: 700, color: "var(--rosa-deep)" }}>{fmt(f.total)}</p>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {f.formaPago === "Crédito" && f.estadoCredito === "abierto" && (
-                      <button onClick={() => cerrarCredito(f)} style={{ background: "#F3E5F5", color: "#7B1FA2", border: "1px solid #CE93D8", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                        💳 Cobrar crédito
+
+                  <div style={{ fontSize: 12, color: "var(--mid)", flex: 1 }}>
+                    {f.items.map((item, idx) => (
+                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <span>{item.cantidad}x {item.descripcion} {item.talla ? `(${item.talla})` : ""}</span>
+                        <button onClick={() => setItemAEliminar({ factura: f, index: idx, item })} style={{ background: "transparent", border: "none", color: "var(--danger)", padding: "2px 6px", cursor: "pointer", fontSize: 16, fontWeight: "bold" }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+                    <p style={{ fontSize: 16, fontWeight: 700, color: "var(--rosa-deep)" }}>{fmt(f.total)}</p>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {f.formaPago === "Crédito" && f.estadoCredito === "abierto" && (
+                        <button onClick={() => cerrarCredito(f)} style={{ background: "#F3E5F5", color: "#7B1FA2", border: "1px solid #CE93D8", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 700 }}>
+                          💳 Cobrar crédito
+                        </button>
+                      )}
+                      <button onClick={() => setFacturaAEliminar(f)} style={{ background: "#FFEBEE", color: "var(--danger)", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 600 }}>
+                        🗑️ Anular
                       </button>
-                    )}
-                    <button onClick={() => setFacturaAEliminar(f)} style={{ background: "#FFEBEE", color: "var(--danger)", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                      🗑️ Anular
-                    </button>
-                    <button onClick={() => reImprimir(f)} style={{ background: "var(--creme)", color: "var(--dark)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                      📄 Imprimir
-                    </button>
+                      <button onClick={() => reImprimir(f)} style={{ background: "var(--creme)", color: "var(--dark)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 600 }}>
+                        📄 Factura
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -366,7 +416,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
         <div className="animate no-print" style={{ display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%", maxWidth: 600, background: "var(--white)", borderRadius: 20, padding: "24px", boxShadow: "var(--shadow)", border: "1.5px solid var(--rosa-soft)" }}>
             <p style={{ fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 700, color: "var(--rosa-deep)", marginBottom: 20 }}>Facturar Productos</p>
-            
+
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
               {/* Buscador de producto */}
@@ -457,30 +507,35 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
                         <p style={{ fontSize: 11, color: "var(--mid)", marginTop: 2 }}>{item.cantidad} x {fmt(item.precioFinal)}</p>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <strong style={{ fontSize: 14, color: "var(--dark)" }}>{fmt(item.cantidad * item.precioFinal)}</strong> 
-                        <button onClick={() => setCarrito(carrito.filter(c => !(c.id === item.id && c.tallaSel === item.tallaSel)))} style={{background:"transparent", border:"none", color:"var(--danger)", padding: 4}}>❌</button>
+                        <strong style={{ fontSize: 14, color: "var(--dark)" }}>{fmt(item.cantidad * item.precioFinal)}</strong>
+                        <button onClick={() => setCarrito(carrito.filter(c => !(c.id === item.id && c.tallaSel === item.tallaSel)))} style={{ background: "transparent", border: "none", color: "var(--danger)", padding: 4 }}>❌</button>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ flex: 1 }}><label style={{ fontSize: 10, color: "var(--mid)", marginLeft: 4 }}>Método de pago</label><select value={formaPago} onChange={e => setFormaPago(e.target.value)} style={{ marginTop: 2 }}>{["Efectivo","Nequi","Daviplata","Transfiya","Tarjeta","Crédito"].map(f => <option key={f}>{f}</option>)}</select></div>
-                    <button onClick={procesarVentaMultiple} style={{ flex: 1.5, background: formaPago === "Crédito" ? "linear-gradient(135deg, #7B1FA2, #9C27B0)" : "linear-gradient(135deg, var(--success), #43A047)", color: "white", border: "none", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: 15, alignSelf: "flex-end" }}>
-                      {formaPago === "Crédito" ? `💳 Registrar crédito` : `Cobrar ${fmt(totalCarrito)}`}
-                    </button>
+
+                {/* Datos del cliente (opcional) */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--mid)", marginLeft: 4 }}>Nombre cliente (opcional)</label>
+                    <input placeholder="Ej: María García" value={clienteNombre} onChange={e => setClienteNombre(e.target.value)} style={{ marginTop: 4 }} />
                   </div>
-                  {formaPago === "Crédito" && (
-                    <div>
-                      <label style={{ fontSize: 11, color: "#7B1FA2", fontWeight: 600, marginLeft: 4 }}>Nombre del cliente (crédito)</label>
-                      <input
-                        placeholder="¿A quién se le fía?"
-                        value={clienteCredito}
-                        onChange={e => setClienteCredito(e.target.value)}
-                        style={{ marginTop: 4, borderColor: "#7B1FA2" }}
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label style={{ fontSize: 11, color: "var(--mid)", marginLeft: 4 }}>WhatsApp (opcional)</label>
+                    <input placeholder="Ej: 3001234567" value={clienteTelefono} onChange={e => setClienteTelefono(e.target.value)} style={{ marginTop: 4 }} />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 10, color: "var(--mid)", marginLeft: 4 }}>Método de pago</label>
+                    <select value={formaPago} onChange={e => setFormaPago(e.target.value)} style={{ marginTop: 2 }}>
+                      {["Efectivo", "Nequi", "Daviplata", "Transfiya", "Tarjeta", "Crédito"].map(f => <option key={f}>{f}</option>)}
+                    </select>
+                  </div>
+                  <button onClick={procesarVentaMultiple} style={{ flex: 1.5, background: formaPago === "Crédito" ? "linear-gradient(135deg, #7B1FA2, #9C27B0)" : "linear-gradient(135deg, var(--success), #43A047)", color: "white", border: "none", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: 15, alignSelf: "flex-end" }}>
+                    {formaPago === "Crédito" ? `💳 Registrar crédito` : `Cobrar ${fmt(totalCarrito)}`}
+                  </button>
                 </div>
               </div>
             )}
