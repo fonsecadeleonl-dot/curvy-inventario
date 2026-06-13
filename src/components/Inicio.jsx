@@ -1,6 +1,12 @@
+import { useState, useEffect } from "react";
 import { esHoy, fmt, fmtNum, hoyObj, StatCard, Badge, Icon } from "../utils.jsx";
 
 export default function Inicio({ prendas, ventas }) {
+  const [hora, setHora] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setHora(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
   const ventasHoy = ventas.filter(v => esHoy(v.fecha));
   
   const gananciasHoy = ventasHoy.reduce((s, v) => s + (Number(v.precioVenta) - Number(v.costoCompra)) * Number(v.cantidad), 0);
@@ -13,11 +19,12 @@ export default function Inicio({ prendas, ventas }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* PUNTO 1: Mensaje de bienvenida */}
-      <div style={{ background: "linear-gradient(135deg, var(--rosa-deep) 0%, var(--rosa) 100%)", borderRadius: 24, padding: "28px 24px", color: "var(--white)", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg, var(--rosa-deep) 0%, var(--rosa) 100%)", borderRadius: 24, padding: "28px 24px", color: "var(--white)", position: "relative", overflow: "hidden", textAlign: "center" }}>
         <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
         <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: 14, opacity: 0.9, marginBottom: 4 }}>¡Hola de nuevo, hermosa!</p>
         <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, marginBottom: 4 }}>Llegó la CEO de Curvy 💅🏻</h2>
         <p style={{ fontSize: 13, opacity: 0.8 }}>{hoyObj.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })}</p>
+        <p style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1, marginTop: 6 }}>{hora.toLocaleTimeString("es-CO")}</p>
       </div>
 
       <div className="stats-grid">
