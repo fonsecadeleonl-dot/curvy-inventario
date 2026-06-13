@@ -58,22 +58,28 @@ export default function Dashboard({ prendas, ventas, facturas = [] }) {
   const [notas, setNotas] = useState([]);
   const [notaTexto, setNotaTexto] = useState("");
   const [guardandoNota, setGuardandoNota] = useState(false);
+  const [notaError, setNotaError] = useState("");
 
   useEffect(() => {
-    getDocs(collection(db, "notas")).then(snap => {
-      setNotas(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => new Date(b.fecha) - new Date(a.fecha)));
-    });
+    getDocs(collection(db, "notas"))
+      .then(snap => {
+        setNotas(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => new Date(b.fecha) - new Date(a.fecha)));
+      })
+      .catch(err => setNotaError("Error cargando notas: " + err.message));
   }, []);
 
   const guardarNota = async () => {
     const texto = notaTexto.trim();
     if (!texto) return;
     setGuardandoNota(true);
+    setNotaError("");
     try {
       const nueva = { texto, fecha: new Date().toISOString() };
       const ref = await addDoc(collection(db, "notas"), nueva);
       setNotas(n => [{ id: ref.id, ...nueva }, ...n]);
       setNotaTexto("");
+    } catch (err) {
+      setNotaError("Error al guardar: " + err.message);
     } finally { setGuardandoNota(false); }
   };
 
@@ -383,6 +389,9 @@ export default function Dashboard({ prendas, ventas, facturas = [] }) {
           </button>
         </div>
         <p style={{ fontSize: 10, color: "var(--mid)", marginTop: 6 }}>Ctrl + Enter para guardar rápido</p>
+        {notaError && (
+          <p style={{ fontSize: 12, color: "var(--danger)", marginTop: 8, background: "#FFEBEE", padding: "8px 12px", borderRadius: 8 }}>⚠️ {notaError}</p>
+        )}
 
         {notas.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
