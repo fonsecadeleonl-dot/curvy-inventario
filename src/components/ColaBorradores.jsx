@@ -1,0 +1,213 @@
+import { useState, useEffect } from "react";
+import { db } from "../firebase";
+import { collection, getDocs, updateDoc, deleteDoc, doc, addDoc } from "firebase/firestore";
+import { fmt, Icon, Badge } from "../utils.jsx";
+
+const ORDEN_TALLAS = ["XS","S","M","L","XL","0XL","1XL","2XL","3XL","4XL","5XL","Única"];
+const CATEGORIAS   = ["Blusa","Camisa","Vestido","Falda","Pantalón","Legging","Conjunto","Chaqueta","Otra"];
+
+export default function ColaBorradores({ setPrendas, onCerrar }) {
+  const [borradores, setBorradores] = useState([]);
+  const [cargando, setCargando]     = useState(true);
+  const [guardando, setGuardando]   = useState(null);
+
+  useEffect(() => {
+    getDocs(collection(db, "borradores"))
+      .then(snap => {
+        const data = snap.docs
+          .map(d => ({ _id: d.id, ...d.data() }))
+          .filter(b => b.estado === "pendiente")
+          .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        setBorradores(data);
+      })
+      .finally(() => setCargando(false));
+  }, []);
+
+  const actualizarCampo = (id, campo, valor) => {
+    setBorradores(prev => prev.map(b => b._id === id ? { ...b, [campo]: valor } : b));
+  };
+
+  const actualizarTalla = (id, idx, subcampo, valor) => {
+    setBorradores(prev => prev.map(b => {
+      if (b._id !== id) return b;
+      const tallas = b.tallas.map((t, i) => i === idx ? { ...t, [subcampo]: valor } : t);
+      return { ...b, tallas };
+    }));
+  };
+
+  const agregarTalla = (id) => {
+    setBorradores(prev => prev.map(b => b._id !== id ? b : { ...b, tallas: [...(b.tallas || []), { talla: "M", cantidad: 1 }] }));
+  };
+
+  const quitarTalla = (id, idx) => {
+    setBorradores(prev => prev.map(b => b._id !== id ? b : { ...b, tallas: b.tallas.filter((_, i) => i !== idx) }));
+  };
+
+  const confirmarBorrador = async (b) => {
+    if (!b.descripcion || !b.precioVenta || !b.categoria) return alert("Completa descripción, categoría y precio de venta.");
+    setGuardando(b._id);
+    try {
+      const stockPorTalla = {};
+      let stockTotal = 0;
+      (b.tallas || []).forEach(({ talla, cantidad }) => {
+        const c = Number(cantidad) || 0;
+        stockPorTalla[talla] = c;
+        stockTotal += c;
+      });
+
+      const nuevaPrenda = {
+        codigo:      b.referencia || `REF-${Date.now()}`,
+        descripcion: b.descripcion,
+        categoria:   b.categoria,
+        costoCompra: Number(b.costoUnitario) || 0,
+        precioVenta: Number(b.precioVenta)   || 0,
+        stock:       stockTotal,
+        stockPorTalla,
+        stockMinimo: 3,
+        imagenes:    [],
+        fechaCreacion: new Date().toISOString(),
+      };
+
+      const ref = await addDoc(collection(db, "prendas"), nuevaPrenda);
+      setPrendas(p => [{ id: ref.id, ...nuevaPrenda }, ...p]);
+      await updateDoc(doc(db, "borradores", b._id), { estado: "confirmado" });
+      setBorradores(prev => prev.filter(x => x._id !== b._id));
+    } catch (err) { alert("Error al guardar: " + err.message); }
+    finally { setGuardando(null); }
+  };
+
+  const descartarBorrador = async (id) => {
+    await deleteDoc(doc(db, "borradores", id));
+    setBorradores(prev => prev.filter(b => b._id !== id));
+  };
+
+  if (cargando) return (
+    <div style={{ padding: 40, textAlign: "center", color: "var(--mid)" }}>Cargando borradores…</div>
+  );
+
+  if (borradores.length === 0) return (
+    <div style={{ textAlign: "center", padding: "48px 20px", background: "var(--white)", borderRadius: 20, border: "1.5px dashed var(--border)" }}>
+      <div style={{ fontSize: 44, marginBottom: 12 }}>✅</div>
+      <p style={{ fontWeight: 700, color: "var(--dark)", fontSize: 16 }}>Sin borradores pendientes</p>
+      <p style={{ fontSize: 13, color: "var(--mid)" }}>Importa una factura para comenzar</p>
+    </div>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 18, color: "var(--rosa-deep)", margin: 0 }}>Cola de Revisión</h3>
+          <p style={{ fontSize: 12, color: "var(--mid)", margin: "4px 0 0" }}>{borradores.length} borradores pendientes</p>
+        </div>
+      </div>
+
+      {borradores.map(b => (
+        <div key={b._id} style={{ background: "var(--white)", borderRadius: 20, padding: 20, border: "1.5px solid var(--rosa-soft)", boxShadow: "var(--shadow)" }}>
+
+          {/* HEADER BORRADOR */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 12, borderBottom: "1px dashed var(--border)" }}>
+            <div>
+              <span style={{ fontSize: 11, background: "#FFF3E0", color: "var(--warn)", padding: "3px 10px", borderRadius: 20, fontWeight: 700 }}>BORRADOR IA</span>
+              <p style={{ fontSize: 12, color: "var(--mid)", margin: "6px 0 0" }}>Ref: {b.referencia || "—"} · Costo: {b.costoUnitario ? `$${Number(b.costoUnitario).toLocaleString("es-CO")}` : "—"}</p>
+            </div>
+            <button onClick={() => descartarBorrador(b._id)} style={{ background: "#FFEBEE", color: "var(--danger)", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Descartar</button>
+          </div>
+
+          {/* CAMPOS EDITABLES */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+            {/* Descripción */}
+            <div>
+              <label style={{ fontSize: 11, color: "var(--mid)", fontWeight: 600 }}>Descripción *</label>
+              <input
+                value={b.descripcion || ""}
+                onChange={e => actualizarCampo(b._id, "descripcion", e.target.value)}
+                style={{ marginTop: 4 }}
+                placeholder="Nombre de la prenda"
+              />
+            </div>
+
+            {/* Categoría + Precio venta */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div>
+                <label style={{ fontSize: 11, color: "var(--mid)", fontWeight: 600 }}>Categoría *</label>
+                <select value={b.categoria || ""} onChange={e => actualizarCampo(b._id, "categoria", e.target.value)} style={{ marginTop: 4 }}>
+                  <option value="">Seleccionar…</option>
+                  {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: "var(--mid)", fontWeight: 600 }}>Precio de venta * ($)</label>
+                <input
+                  type="number"
+                  value={b.precioVenta || ""}
+                  onChange={e => actualizarCampo(b._id, "precioVenta", e.target.value)}
+                  style={{ marginTop: 4 }}
+                  placeholder="Ej: 89000"
+                />
+              </div>
+            </div>
+
+            {/* Costo unitario (editable por si la IA erró) */}
+            <div>
+              <label style={{ fontSize: 11, color: "var(--mid)", fontWeight: 600 }}>Costo de compra ($) — extraído por IA</label>
+              <input
+                type="number"
+                value={b.costoUnitario || ""}
+                onChange={e => actualizarCampo(b._id, "costoUnitario", e.target.value)}
+                style={{ marginTop: 4 }}
+                placeholder="Costo unitario"
+              />
+            </div>
+
+            {/* TALLAS */}
+            <div>
+              <label style={{ fontSize: 11, color: "var(--mid)", fontWeight: 600, marginBottom: 8, display: "block" }}>Tallas y cantidades — extraídas por IA</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {(b.tallas || []).map((t, idx) => (
+                  <div key={idx} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <select
+                      value={t.talla || ""}
+                      onChange={e => actualizarTalla(b._id, idx, "talla", e.target.value)}
+                      style={{ flex: 1 }}
+                    >
+                      {ORDEN_TALLAS.map(ta => <option key={ta}>{ta}</option>)}
+                    </select>
+                    <input
+                      type="number"
+                      value={t.cantidad || ""}
+                      onChange={e => actualizarTalla(b._id, idx, "cantidad", e.target.value)}
+                      style={{ width: 70 }}
+                      placeholder="Cant"
+                      min="1"
+                    />
+                    <button onClick={() => quitarTalla(b._id, idx)} style={{ background: "#FFEBEE", color: "var(--danger)", border: "none", width: 30, height: 30, borderRadius: 8, cursor: "pointer", fontWeight: 700 }}>×</button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => agregarTalla(b._id)} style={{ marginTop: 8, background: "var(--creme)", border: "1px dashed var(--border)", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--mid)" }}>
+                + Añadir talla
+              </button>
+            </div>
+
+            {/* RESUMEN */}
+            <div style={{ background: "var(--rosa-pale)", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "var(--rosa-deep)", fontWeight: 600 }}>
+              Total unidades: {(b.tallas || []).reduce((s, t) => s + (Number(t.cantidad) || 0), 0)} uds
+              {b.costoUnitario && b.precioVenta ? ` · Margen: ${Math.round(((b.precioVenta - b.costoUnitario) / b.precioVenta) * 100)}%` : ""}
+            </div>
+
+            {/* BOTÓN CONFIRMAR */}
+            <button
+              onClick={() => confirmarBorrador(b)}
+              disabled={guardando === b._id}
+              style={{ background: guardando === b._id ? "var(--border)" : "linear-gradient(135deg, var(--success), #43A047)", color: "#fff", border: "none", borderRadius: 14, padding: "13px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+            >
+              {guardando === b._id ? "Guardando…" : "✅ Confirmar y agregar al inventario"}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

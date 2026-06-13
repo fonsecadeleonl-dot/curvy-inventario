@@ -2,14 +2,18 @@ import { useState, useMemo } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { fmt, fmtNum, parseNum, comprimirImagen, Icon, fmtFecha } from "../utils.jsx";
+import ImportarFactura from "./ImportarFactura.jsx";
+import ColaBorradores from "./ColaBorradores.jsx";
 
 export default function Inventario({ prendas, setPrendas }) {
   const [busqueda, setBusqueda] = useState("");
-  const [filtroTiempo, setFiltroTiempo] = useState("todo"); 
+  const [filtroTiempo, setFiltroTiempo] = useState("todo");
   const [mostrarForm, setMostrarForm] = useState(false);
   const [toast, setToast] = useState(null);
   const [editandoId, setEditandoId] = useState(null);
-  const [prendaAEliminar, setPrendaAEliminar] = useState(null); 
+  const [prendaAEliminar, setPrendaAEliminar] = useState(null);
+  const [mostrarImportar, setMostrarImportar] = useState(false);
+  const [mostrarBorradores, setMostrarBorradores] = useState(false); 
   
   // 1. Agregamos las nuevas tallas al estado inicial
   const formBase = { 
@@ -229,6 +233,13 @@ export default function Inventario({ prendas, setPrendas }) {
       
       {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.tipo === "ok" ? "var(--dark)" : toast.tipo === "warn" ? "var(--warn)" : "var(--danger)", color: "var(--white)", padding: "10px 20px", borderRadius: 100, fontSize: 13, zIndex: 9999, boxShadow: "var(--shadow-lg)" }}>{toast.msg}</div>}
 
+      {mostrarImportar && (
+        <ImportarFactura
+          onBorradorCreado={() => { setMostrarImportar(false); setMostrarBorradores(true); }}
+          onClose={() => setMostrarImportar(false)}
+        />
+      )}
+
       {prendaAEliminar && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div className="animate" style={{ background: "white", padding: 30, borderRadius: 24, width: "90%", maxWidth: 340, textAlign: "center", boxShadow: "var(--shadow-lg)" }}>
@@ -274,11 +285,27 @@ export default function Inventario({ prendas, setPrendas }) {
             ))}
           </div>
 
-          <button onClick={() => { setMostrarForm(!mostrarForm); if(mostrarForm) { setEditandoId(null); setForm(formBase); } }} style={{ background: mostrarForm ? "var(--mid)" : "linear-gradient(135deg, var(--rosa-deep), var(--rosa))", color: "var(--white)", border: "none", borderRadius: 50, padding: "8px 20px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flex: "0 1 auto", whiteSpace: "nowrap" }}>
-            {mostrarForm ? <><Icon name="close" size={16} /> Cancelar</> : <><Icon name="plus" size={16} /> Agregar Prenda</>}
-          </button>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <button onClick={() => setMostrarImportar(true)} style={{ background: "var(--creme)", color: "var(--rosa-deep)", border: "1.5px solid var(--rosa-soft)", borderRadius: 50, padding: "8px 16px", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+              🧾 Importar Factura
+            </button>
+            <button onClick={() => { setMostrarForm(!mostrarForm); if(mostrarForm) { setEditandoId(null); setForm(formBase); } }} style={{ background: mostrarForm ? "var(--mid)" : "linear-gradient(135deg, var(--rosa-deep), var(--rosa))", color: "var(--white)", border: "none", borderRadius: 50, padding: "8px 20px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, whiteSpace: "nowrap" }}>
+              {mostrarForm ? <><Icon name="close" size={16} /> Cancelar</> : <><Icon name="plus" size={16} /> Agregar Prenda</>}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* COLA DE BORRADORES */}
+      {mostrarBorradores && (
+        <div className="animate" style={{ background: "var(--white)", borderRadius: 20, padding: 20, border: "1.5px solid var(--warn)", boxShadow: "var(--shadow)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <span style={{ fontSize: 12, background: "#FFF3E0", color: "var(--warn)", padding: "4px 12px", borderRadius: 20, fontWeight: 700 }}>🧾 Cola de Revisión IA</span>
+            <button onClick={() => setMostrarBorradores(false)} style={{ background: "transparent", border: "none", color: "var(--mid)", fontSize: 18, cursor: "pointer" }}>×</button>
+          </div>
+          <ColaBorradores setPrendas={setPrendas} onCerrar={() => setMostrarBorradores(false)} />
+        </div>
+      )}
 
       {/* FORMULARIO DE INVENTARIO */}
       {mostrarForm && (
