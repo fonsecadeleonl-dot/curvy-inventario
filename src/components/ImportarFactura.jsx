@@ -3,7 +3,7 @@ import { db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { Icon } from "../utils.jsx";
 
-const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY;
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const PROMPT = `Eres un extractor de datos para una tienda de ropa plus-size en Colombia.
 Analiza esta imagen de factura de compra y extrae TODOS los productos/referencias que aparecen.
@@ -59,25 +59,20 @@ async function pdfPaginaABase64(file) {
   return base64;
 }
 
-async function llamarClaude(base64, mediaType = "image/png") {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+async function llamarGemini(base64, mediaType = "image/png") {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "x-api-key": ANTHROPIC_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-      "content-type": "application/json",
-    },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [{
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-          { type: "text", text: PROMPT }
+      contents: [{
+        parts: [
+          { inline_data: { mime_type: mediaType, data: base64 } },
+          { text: PROMPT }
         ]
-      }]
+      }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
     })
   });
 
@@ -87,7 +82,8 @@ async function llamarClaude(base64, mediaType = "image/png") {
   }
 
   const data = await res.json();
-  const texto = data.content[0].text.trim();
+  const texto = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (!texto) throw new Error("Gemini no devolvió respuesta");
   const jsonStr = texto.startsWith("[") ? texto : texto.match(/\[[\s\S]*\]/)?.[0];
   if (!jsonStr) throw new Error("La IA no devolvió JSON válido");
   return JSON.parse(jsonStr);
@@ -99,9 +95,9 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
   const [errorMsg, setErrorMsg] = useState("");
 
   const procesarArchivo = async (file) => {
-    if (!ANTHROPIC_KEY) {
+    if (!GEMINI_KEY) {
       setEstado("error");
-      setErrorMsg("Falta VITE_ANTHROPIC_API_KEY en las variables de entorno.");
+      setErrorMsg("Falta VITE_GEMINI_API_KEY en las variables de entorno.");
       return;
     }
 
@@ -122,7 +118,7 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
       }
 
       setProgreso("Analizando factura con IA…");
-      const productos = await llamarClaude(base64, mediaType);
+      const productos = await llamarGemini(base64, mediaType);
 
       if (!productos.length) throw new Error("No se encontraron productos en la imagen");
 
