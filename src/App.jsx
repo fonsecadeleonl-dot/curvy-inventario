@@ -93,8 +93,8 @@ export default function App() {
             </button>
           </div>
 
-          {tab === "inicio"     && <Inicio prendas={prendas} ventas={ventas} />}
-          {tab === "dashboard"  && <Dashboard prendas={prendas} ventas={ventas} />}
+          {tab === "inicio"     && <Inicio prendas={prendas} ventas={ventas} facturas={facturas} />}
+          {tab === "dashboard"  && <Dashboard prendas={prendas} ventas={ventas} facturas={facturas} />}
           {tab === "inventario" && <Inventario prendas={prendas} setPrendas={setPrendas} />}
           {tab === "ventas"     && <Ventas prendas={prendas} setPrendas={setPrendas} ventas={ventas} setVentas={setVentas} facturas={facturas} setFacturas={setFacturas} />}
         </div>

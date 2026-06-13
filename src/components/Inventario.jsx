@@ -209,11 +209,16 @@ export default function Inventario({ prendas, setPrendas }) {
         }
         .img-zoom-container img { transition: transform 0.35s ease; backface-visibility: hidden; }
         .img-zoom-container:hover {
-          transform: scale(2.2) translateY(-10px); 
-          z-index: 9999; 
-          box-shadow: 0 15px 35px rgba(0,0,0,0.25); 
+          transform: scale(1.04) translateY(-1px);
+          z-index: 9999;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.12);
           border-radius: 10px !important;
-          border: 1px solid rgba(0,0,0,0.05); 
+          border: 1px solid rgba(0,0,0,0.05);
+        }
+        @media (min-width: 768px) {
+          .img-zoom-container:hover {
+            transform: scale(1.08) translateY(-2px);
+          }
         }
         
         .upload-mini-btn {
@@ -311,7 +316,7 @@ export default function Inventario({ prendas, setPrendas }) {
               <div style={{ width: "100%" }}>
                 <label style={{fontSize: 11, color: 'var(--mid)', paddingLeft: 4}}>Categoría</label>
                 {/* 2. Añadido "Camiseta" al listado de categorías */}
-                <select value={form.categoria} onChange={e => setForm({...form, categoria: e.target.value})} disabled={editandoId} style={{width: "100%"}}>
+                <select value={form.categoria} onChange={e => setForm({...form, categoria: e.target.value})} style={{width: "100%"}}>
                   {["Blusa", "Camiseta", "Pantalón", "Vestido", "Conjunto", "Falda", "Cardigan", "Short", "Otro"].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>

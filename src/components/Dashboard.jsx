@@ -56,11 +56,14 @@ const CustomLineChart = ({ data }) => {
   );
 };
 
-export default function Dashboard({ prendas, ventas }) {
-  // Estado para el Slicer de botones (Por defecto 'semana')
+export default function Dashboard({ prendas, ventas, facturas = [] }) {
   const [filtroTiempo, setFiltroTiempo] = useState('semana');
 
-  // Fechas de control locales
+  const ticketsCredito = new Set(
+    facturas.filter(f => f.formaPago === "Crédito" && f.estadoCredito === "abierto").map(f => f.ticketId)
+  );
+  ventas = ventas.filter(v => !ticketsCredito.has(v.ticketId));
+
   const hoy = new Date();
   const hace7Dias = new Date(); hace7Dias.setDate(hoy.getDate() - 7);
   const mesAnterior = new Date(); mesAnterior.setMonth(hoy.getMonth() - 1);
@@ -158,7 +161,7 @@ export default function Dashboard({ prendas, ventas }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       
       {/* Cabecera Intacta */}
-      <div style={{ background: "linear-gradient(135deg, var(--rosa-deep) 0%, var(--rosa) 100%)", borderRadius: 24, padding: "28px 24px", color: "var(--white)", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg, var(--rosa-deep) 0%, var(--rosa) 100%)", borderRadius: 24, padding: "28px 24px", color: "var(--white)", position: "relative", overflow: "hidden", textAlign: "center" }}>
         <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
         <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, marginBottom: 4 }}>Los números no mienten, Linda 🔥</h2>
         <p style={{ fontSize: 13, opacity: 0.8 }}>Métricas actualizadas en tiempo real</p>

@@ -8,8 +8,11 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
   const [carrito, setCarrito] = useState([]);
   const [codigoSel, setCodigoSel] = useState("");
   const [cantidad, setCantidad] = useState(1);
-  const [precioFinal, setPrecioFinal] = useState(""); 
+  const [precioFinal, setPrecioFinal] = useState("");
+  const [tallaSel, setTallaSel] = useState("");
+  const [busquedaProducto, setBusquedaProducto] = useState("");
   const [formaPago, setFormaPago] = useState("Efectivo");
+  const [clienteCredito, setClienteCredito] = useState("");
   
   const [busqueda, setBusqueda] = useState("");
   const [filtroTiempo, setFiltroTiempo] = useState("todo"); 
@@ -20,6 +23,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
   const [itemAEliminar, setItemAEliminar] = useState(null); // NUEVO: Para anular una sola prenda
 
   const prendaSel = prendas.find(p => p.codigo === codigoSel);
+  const ordenTallas = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
   const showToast = (msg, tipo = "ok") => { setToast({ msg, tipo }); setTimeout(() => setToast(null), 3000); };
 
   const facturasCompletas = useMemo(() => {
@@ -46,6 +50,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
       const q = busqueda.toLowerCase();
       const coincideTexto = (f.ticketId || "").toLowerCase().includes(q) || (f.formaPago || "").toLowerCase().includes(q) || (f.items || []).some(i => (i.descripcion || "").toLowerCase().includes(q));
 
+      if (filtroTiempo === "creditos") return coincideTexto && f.formaPago === "Crédito" && f.estadoCredito === "abierto";
       let coincideFecha = true;
       if (f.fecha && filtroTiempo !== "todo") {
         const d = new Date(f.fecha);
@@ -61,20 +66,26 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
 
   const handleSelectPrenda = (codigo) => {
     setCodigoSel(codigo);
+    setTallaSel("");
     const p = prendas.find(pr => pr.codigo === codigo);
     if (p) setPrecioFinal(String(p.precioVenta));
   };
 
   const agregarAlCarrito = () => {
     if (!prendaSel || cantidad < 1 || precioFinal === "") return showToast("⚠️ Revisa los datos", "warn");
-    const yaEnCarrito = carrito.find(item => item.id === prendaSel.id);
+    if (prendaSel.stockPorTalla && !tallaSel) return showToast("⚠️ Selecciona la talla", "warn");
+    const stockTalla = prendaSel.stockPorTalla ? (Number(prendaSel.stockPorTalla[tallaSel]) || 0) : Number(prendaSel.stock);
+    const yaEnCarrito = carrito.find(item => item.id === prendaSel.id && item.tallaSel === tallaSel);
     const cantTotal = yaEnCarrito ? yaEnCarrito.cantidad + cantidad : cantidad;
-    if (Number(prendaSel.stock) < cantTotal) return showToast("🔴 No hay stock suficiente", "danger");
+    if (stockTalla < cantTotal) return showToast("🔴 No hay stock suficiente para esta talla", "danger");
 
-    if (yaEnCarrito) setCarrito(carrito.map(item => item.id === prendaSel.id ? { ...item, cantidad: cantTotal } : item));
-    else setCarrito([...carrito, { ...prendaSel, cantidad, precioFinal: Number(precioFinal) }]);
-    
-    setCodigoSel(""); setCantidad(1); setPrecioFinal("");
+    if (yaEnCarrito) {
+      setCarrito(carrito.map(item => item.id === prendaSel.id && item.tallaSel === tallaSel ? { ...item, cantidad: cantTotal } : item));
+    } else {
+      setCarrito([...carrito, { ...prendaSel, cantidad, precioFinal: Number(precioFinal), tallaSel }]);
+    }
+
+    setCodigoSel(""); setCantidad(1); setPrecioFinal(""); setTallaSel(""); setBusquedaProducto("");
   };
 
   const totalCarrito = carrito.reduce((sum, item) => sum + (item.precioFinal * item.cantidad), 0);
@@ -87,24 +98,34 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
 
     try {
       for (const item of carrito) {
-        const nuevaVenta = { ticketId, fecha: fechaActual, formaPago, codigo: item.codigo, descripcion: item.descripcion, talla: item.talla, cantidad: item.cantidad, precioVenta: item.precioFinal, costoCompra: item.costoCompra };
+        const tallaVendida = item.tallaSel || item.talla;
+        const nuevaVenta = { ticketId, fecha: fechaActual, formaPago, codigo: item.codigo, descripcion: item.descripcion, talla: tallaVendida, cantidad: item.cantidad, precioVenta: item.precioFinal, costoCompra: item.costoCompra };
         const ventaRef = await addDoc(collection(db, "ventas"), nuevaVenta);
         nuevasVentasLocal.push({ id: ventaRef.id, ...nuevaVenta });
-        
+
         const prendaRef = doc(db, "prendas", item.id);
-        const stockRestante = Number(item.stock) - item.cantidad;
-        await updateDoc(prendaRef, { stock: stockRestante });
-        setPrendas(p => p.map(pr => pr.id === item.id ? { ...pr, stock: stockRestante } : pr));
+        if (item.stockPorTalla && item.tallaSel) {
+          const nuevoStockPorTalla = { ...item.stockPorTalla };
+          nuevoStockPorTalla[item.tallaSel] = Math.max(0, Number(nuevoStockPorTalla[item.tallaSel] || 0) - item.cantidad);
+          const nuevoTotalStock = Object.values(nuevoStockPorTalla).reduce((a, b) => a + Number(b), 0);
+          await updateDoc(prendaRef, { stock: nuevoTotalStock, stockPorTalla: nuevoStockPorTalla });
+          setPrendas(p => p.map(pr => pr.id === item.id ? { ...pr, stock: nuevoTotalStock, stockPorTalla: nuevoStockPorTalla } : pr));
+        } else {
+          const stockRestante = Number(item.stock) - item.cantidad;
+          await updateDoc(prendaRef, { stock: stockRestante });
+          setPrendas(p => p.map(pr => pr.id === item.id ? { ...pr, stock: stockRestante } : pr));
+        }
       }
 
-      const nuevaFactura = { ticketId, fecha: fechaActual, formaPago, total: totalCarrito, items: carrito.map(i => ({ cantidad: i.cantidad, descripcion: i.descripcion, talla: i.talla, precioFinal: i.precioFinal, codigo: i.codigo })) };
+      const esCredito = formaPago === "Crédito";
+      const nuevaFactura = { ticketId, fecha: fechaActual, formaPago, total: totalCarrito, ...(esCredito ? { clienteCredito, estadoCredito: "abierto" } : {}), items: carrito.map(i => ({ cantidad: i.cantidad, descripcion: i.descripcion, talla: i.tallaSel || i.talla, precioFinal: i.precioFinal, codigo: i.codigo })) };
       const facRef = await addDoc(collection(db, "facturas"), nuevaFactura);
       
       setFacturas(f => [{ id: facRef.id, ...nuevaFactura }, ...f]);
       setVentas(v => [...nuevasVentasLocal, ...v]);
       setUltimaVentaPdf({ ...nuevaFactura }); 
-      setCarrito([]); setMostrarForm(false);
-      showToast(`✅ Venta procesada`);
+      setCarrito([]); setMostrarForm(false); setClienteCredito("");
+      showToast(`✅ ${formaPago === "Crédito" ? "Crédito registrado" : "Venta procesada"}`);
       setTimeout(() => window.print(), 300); 
 
     } catch (error) { showToast("❌ Error al procesar", "danger"); }
@@ -186,6 +207,15 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
     } catch (err) { showToast("❌ Error al anular prenda", "danger"); }
   };
 
+  const cerrarCredito = async (factura) => {
+    try {
+      const fechaCierre = new Date().toISOString();
+      await updateDoc(doc(db, "facturas", factura.id), { estadoCredito: "cerrado", fechaCierre });
+      setFacturas(f => f.map(x => x.id === factura.id ? { ...x, estadoCredito: "cerrado", fechaCierre } : x));
+      showToast("✅ Crédito cerrado — dinero ingresado a cuentas");
+    } catch (err) { showToast("❌ Error al cerrar crédito", "danger"); }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
       {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.tipo === "ok" ? "var(--dark)" : toast.tipo === "warn" ? "var(--warn)" : "var(--danger)", color: "var(--white)", padding: "10px 20px", borderRadius: 100, fontSize: 13, zIndex: 9999, boxShadow: "var(--shadow-lg)" }}>{toast.msg}</div>}
@@ -247,11 +277,11 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
           <input placeholder="Buscar factura o prenda..." value={busqueda} onChange={e => setBusqueda(e.target.value)} disabled={mostrarForm} style={{ paddingLeft: 40 }} />
         </div>
         <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2, scrollbarWidth: "none", opacity: mostrarForm ? 0.4 : 1, pointerEvents: mostrarForm ? "none" : "auto" }}>
-          {[{ id: "hoy", label: "Hoy" }, { id: "semana", label: "7 Días" }, { id: "mes", label: "Este Mes" }, { id: "todo", label: "Todas" }].map(f => (
+          {[{ id: "hoy", label: "Hoy" }, { id: "semana", label: "7 Días" }, { id: "mes", label: "Este Mes" }, { id: "todo", label: "Todas" }, { id: "creditos", label: "💳 Créditos" }].map(f => (
             <button key={f.id} onClick={() => setFiltroTiempo(f.id)} style={{ background: filtroTiempo === f.id ? "var(--dark)" : "var(--creme)", color: filtroTiempo === f.id ? "white" : "var(--mid)", border: filtroTiempo === f.id ? "1px solid var(--dark)" : "1px solid var(--border)", padding: "8px 16px", borderRadius: 50, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.2s" }}>{f.label}</button>
           ))}
         </div>
-        <button onClick={() => { setMostrarForm(!mostrarForm); setCarrito([]); }} style={{ background: mostrarForm ? "var(--mid)" : "linear-gradient(135deg, var(--rosa-deep), var(--rosa))", color: "var(--white)", border: "none", borderRadius: 14, padding: "13px 20px", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flex: "0 1 auto", whiteSpace: "nowrap", marginLeft: "auto" }}>
+        <button onClick={() => { setMostrarForm(!mostrarForm); setCarrito([]); setCodigoSel(""); setTallaSel(""); setBusquedaProducto(""); }} style={{ background: mostrarForm ? "var(--mid)" : "linear-gradient(135deg, var(--rosa-deep), var(--rosa))", color: "var(--white)", border: "none", borderRadius: 14, padding: "13px 20px", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flex: "0 1 auto", whiteSpace: "nowrap", marginLeft: "auto" }}>
           {mostrarForm ? <><Icon name="close" size={16} /> Cancelar</> : <><Icon name="plus" size={16} /> Nueva Venta</>}
         </button>
       </div>
@@ -270,10 +300,13 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
               <div key={f.id} style={{ background: "var(--white)", borderRadius: 16, padding: "18px", boxShadow: "var(--shadow)", border: "1px solid var(--border)", display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px dashed var(--border)", paddingBottom: 12, marginBottom: 12 }}>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)" }}>Factura {f.ticketId.substring(f.ticketId.length - 6)}</p>
                       {f.esVieja && <span style={{fontSize: 9, background: "#FFF3E0", color: "var(--warn)", padding: "2px 6px", borderRadius: 4, fontWeight: 700}}>PRUEBA/ANTIGUA</span>}
+                      {f.formaPago === "Crédito" && f.estadoCredito === "abierto" && <span style={{fontSize: 9, background: "#F3E5F5", color: "#7B1FA2", padding: "2px 8px", borderRadius: 4, fontWeight: 700}}>💳 CRÉDITO ABIERTO</span>}
+                      {f.formaPago === "Crédito" && f.estadoCredito === "cerrado" && <span style={{fontSize: 9, background: "#E8F5E9", color: "var(--success)", padding: "2px 8px", borderRadius: 4, fontWeight: 700}}>✅ CRÉDITO COBRADO</span>}
                     </div>
+                    {f.clienteCredito && <p style={{ fontSize: 12, fontWeight: 600, color: "#7B1FA2", marginTop: 2 }}>👤 {f.clienteCredito}</p>}
                     <p style={{ fontSize: 11, color: "var(--mid)", marginTop: 2 }}>{fmtFecha(f.fecha)} · {new Date(f.fecha).toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'})}</p>
                   </div>
                   <Badge variant="default">{f.formaPago}</Badge>
@@ -291,9 +324,14 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
                 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
                   <p style={{ fontSize: 16, fontWeight: 700, color: "var(--rosa-deep)" }}>{fmt(f.total)}</p>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {f.formaPago === "Crédito" && f.estadoCredito === "abierto" && (
+                      <button onClick={() => cerrarCredito(f)} style={{ background: "#F3E5F5", color: "#7B1FA2", border: "1px solid #CE93D8", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                        💳 Cobrar crédito
+                      </button>
+                    )}
                     <button onClick={() => setFacturaAEliminar(f)} style={{ background: "#FFEBEE", color: "var(--danger)", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                      🗑️ Anular Todo
+                      🗑️ Anular
                     </button>
                     <button onClick={() => reImprimir(f)} style={{ background: "var(--creme)", color: "var(--dark)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                       📄 Imprimir
@@ -311,19 +349,82 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
             <p style={{ fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 700, color: "var(--rosa-deep)", marginBottom: 20 }}>Facturar Productos</p>
             
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <select value={codigoSel} onChange={e => handleSelectPrenda(e.target.value)}>
-                <option value="">— Selecciona prenda para el carrito —</option>
-                {prendas.filter(p => Number(p.stock) > 0).map(p => (
-                  <option key={p.id} value={p.codigo}>{p.descripcion} · Talla: {p.talla} · Stock: {fmtNum(p.stock)}</option>
-                ))}
-              </select>
-              
+
+              {/* Buscador de producto */}
+              {!prendaSel && (
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--mid)" }}><Icon name="search" size={16} /></span>
+                  <input
+                    placeholder="Busca por código, nombre o categoría..."
+                    value={busquedaProducto}
+                    onChange={e => setBusquedaProducto(e.target.value)}
+                    style={{ paddingLeft: 40 }}
+                    autoFocus
+                  />
+                </div>
+              )}
+
+              {/* Resultados de búsqueda */}
+              {busquedaProducto && !prendaSel && (() => {
+                const resultados = prendas.filter(p =>
+                  Number(p.stock) > 0 && (
+                    p.descripcion.toLowerCase().includes(busquedaProducto.toLowerCase()) ||
+                    p.codigo.toLowerCase().includes(busquedaProducto.toLowerCase()) ||
+                    (p.categoria || "").toLowerCase().includes(busquedaProducto.toLowerCase())
+                  )
+                );
+                return (
+                  <div style={{ maxHeight: 280, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+                    {resultados.length === 0 && (
+                      <p style={{ fontSize: 13, color: "var(--mid)", textAlign: "center", padding: "20px 0" }}>Sin resultados para "{busquedaProducto}"</p>
+                    )}
+                    {resultados.map(p => {
+                      const tallasDisp = ordenTallas.filter(t => Number(p.stockPorTalla?.[t] || 0) > 0);
+                      const imgSrc = p.imagenes?.[0] || p.imagen;
+                      return (
+                        <div key={p.id} style={{ background: "var(--creme)", borderRadius: 12, padding: "12px", display: "flex", gap: 10, alignItems: "flex-start", border: "1px solid var(--border)" }}>
+                          <div style={{ width: 48, height: 48, borderRadius: 8, background: "var(--rosa-pale)", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {imgSrc ? <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name="image" size={18} color="var(--rosa-deep)" />}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: "var(--dark)", margin: "0 0 1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.descripcion}</p>
+                            <p style={{ fontSize: 10, color: "var(--mid)", margin: "0 0 8px" }}>{p.codigo} · {fmt(p.precioVenta)}</p>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                              {tallasDisp.length === 0 && <span style={{ fontSize: 11, color: "var(--danger)" }}>Sin stock por talla</span>}
+                              {tallasDisp.map(t => (
+                                <button key={t} onClick={() => { handleSelectPrenda(p.codigo); setTallaSel(t); setBusquedaProducto(p.descripcion); }}
+                                  style={{ background: "var(--rosa-deep)", color: "white", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                  {t} <span style={{ opacity: 0.75, fontWeight: 400 }}>({p.stockPorTalla[t]})</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* Resumen producto + talla seleccionados */}
+              {prendaSel && (
+                <div style={{ background: "#F0FFF4", border: "1.5px solid var(--success)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--dark)", margin: 0 }}>{prendaSel.descripcion}</p>
+                    <p style={{ fontSize: 11, color: "var(--success)", margin: "3px 0 0", fontWeight: 600 }}>
+                      {tallaSel ? `Talla ${tallaSel} · ${prendaSel.stockPorTalla?.[tallaSel] ?? prendaSel.stock} disponibles` : "Selecciona talla"} · {prendaSel.codigo}
+                    </p>
+                  </div>
+                  <button onClick={() => { setCodigoSel(""); setTallaSel(""); setBusquedaProducto(""); }} style={{ background: "transparent", border: "none", color: "var(--mid)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
+                </div>
+              )}
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div><label style={{ fontSize: 11, color: "var(--mid)", marginLeft: 4 }}>Cantidad</label><input type="number" min="1" value={cantidad} onChange={e => setCantidad(parseInt(e.target.value) || 1)} /></div>
                 <div><label style={{ fontSize: 11, color: "var(--mid)", marginLeft: 4 }}>Precio Final c/u ($)</label><input type="text" value={precioFinal ? fmtNum(precioFinal) : ""} onChange={e => setPrecioFinal(parseNum(e.target.value))} /></div>
               </div>
-              
-              <button onClick={agregarAlCarrito} style={{ background: "var(--rosa-pale)", color: "var(--rosa-deep)", border: "1px dashed var(--rosa)", borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 600 }}>+ Añadir al carrito</button>
+
+              <button onClick={agregarAlCarrito} style={{ background: prendaSel && tallaSel ? "var(--rosa-pale)" : "var(--creme)", color: prendaSel && tallaSel ? "var(--rosa-deep)" : "var(--mid)", border: `1px dashed ${prendaSel && tallaSel ? "var(--rosa)" : "var(--border)"}`, borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 600 }}>+ Añadir al carrito</button>
             </div>
 
             {carrito.length > 0 && (
@@ -333,19 +434,34 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
                   {carrito.map((item, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--creme)", padding: "12px", borderRadius: 12 }}>
                       <div>
-                        <p style={{ fontSize: 13, fontWeight: 600 }}>{item.descripcion} ({item.talla})</p>
+                        <p style={{ fontSize: 13, fontWeight: 600 }}>{item.descripcion} ({item.tallaSel || item.talla})</p>
                         <p style={{ fontSize: 11, color: "var(--mid)", marginTop: 2 }}>{item.cantidad} x {fmt(item.precioFinal)}</p>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                         <strong style={{ fontSize: 14, color: "var(--dark)" }}>{fmt(item.cantidad * item.precioFinal)}</strong> 
-                        <button onClick={()=>setCarrito(carrito.filter(c => c.id !== item.id))} style={{background:"transparent", border:"none", color:"var(--danger)", padding: 4}}>❌</button>
+                        <button onClick={() => setCarrito(carrito.filter(c => !(c.id === item.id && c.tallaSel === item.tallaSel)))} style={{background:"transparent", border:"none", color:"var(--danger)", padding: 4}}>❌</button>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 20 }}>
-                  <div style={{ flex: 1 }}><label style={{ fontSize: 10, color: "var(--mid)", marginLeft: 4 }}>Método de pago</label><select value={formaPago} onChange={e => setFormaPago(e.target.value)} style={{ marginTop: 2 }}>{["Efectivo","Nequi","Daviplata","Transfiya","Tarjeta"].map(f => <option key={f}>{f}</option>)}</select></div>
-                  <button onClick={procesarVentaMultiple} style={{ flex: 1.5, background: "linear-gradient(135deg, var(--success), #43A047)", color: "white", border: "none", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: 15, alignSelf: "flex-end" }}>Cobrar {fmt(totalCarrito)}</button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ flex: 1 }}><label style={{ fontSize: 10, color: "var(--mid)", marginLeft: 4 }}>Método de pago</label><select value={formaPago} onChange={e => setFormaPago(e.target.value)} style={{ marginTop: 2 }}>{["Efectivo","Nequi","Daviplata","Transfiya","Tarjeta","Crédito"].map(f => <option key={f}>{f}</option>)}</select></div>
+                    <button onClick={procesarVentaMultiple} style={{ flex: 1.5, background: formaPago === "Crédito" ? "linear-gradient(135deg, #7B1FA2, #9C27B0)" : "linear-gradient(135deg, var(--success), #43A047)", color: "white", border: "none", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: 15, alignSelf: "flex-end" }}>
+                      {formaPago === "Crédito" ? `💳 Registrar crédito` : `Cobrar ${fmt(totalCarrito)}`}
+                    </button>
+                  </div>
+                  {formaPago === "Crédito" && (
+                    <div>
+                      <label style={{ fontSize: 11, color: "#7B1FA2", fontWeight: 600, marginLeft: 4 }}>Nombre del cliente (crédito)</label>
+                      <input
+                        placeholder="¿A quién se le fía?"
+                        value={clienteCredito}
+                        onChange={e => setClienteCredito(e.target.value)}
+                        style={{ marginTop: 4, borderColor: "#7B1FA2" }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
