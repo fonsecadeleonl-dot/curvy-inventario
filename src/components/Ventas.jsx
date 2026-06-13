@@ -20,7 +20,8 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
   const [toast, setToast] = useState(null);
   const [ultimaVentaPdf, setUltimaVentaPdf] = useState(null);
   const [facturaAEliminar, setFacturaAEliminar] = useState(null);
-  const [itemAEliminar, setItemAEliminar] = useState(null); // NUEVO: Para anular una sola prenda
+  const [itemAEliminar, setItemAEliminar] = useState(null);
+  const [mostrarModalImpresion, setMostrarModalImpresion] = useState(false);
 
   const prendaSel = prendas.find(p => p.codigo === codigoSel);
   const ordenTallas = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
@@ -123,10 +124,13 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
       
       setFacturas(f => [{ id: facRef.id, ...nuevaFactura }, ...f]);
       setVentas(v => [...nuevasVentasLocal, ...v]);
-      setUltimaVentaPdf({ ...nuevaFactura }); 
+      setUltimaVentaPdf({ ...nuevaFactura });
       setCarrito([]); setMostrarForm(false); setClienteCredito("");
-      showToast(`✅ ${formaPago === "Crédito" ? "Crédito registrado" : "Venta procesada"}`);
-      setTimeout(() => window.print(), 300); 
+      if (esCredito) {
+        showToast("✅ Crédito registrado");
+      } else {
+        setMostrarModalImpresion(true);
+      }
 
     } catch (error) { showToast("❌ Error al procesar", "danger"); }
   };
@@ -245,6 +249,21 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setItemAEliminar(null)} style={{ flex: 1, background: "var(--border)", color: "var(--dark)", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>Cancelar</button>
               <button onClick={confirmarEliminarItem} style={{ flex: 1, background: "var(--warn)", color: "white", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>Quitar Prenda</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CONFIRMACIÓN IMPRESIÓN */}
+      {mostrarModalImpresion && ultimaVentaPdf && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="animate" style={{ background: "white", padding: 30, borderRadius: 24, width: "90%", maxWidth: 360, textAlign: "center", boxShadow: "var(--shadow-lg)" }}>
+            <div style={{ background: "#E8F5E9", width: 60, height: 60, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }}>✅</div>
+            <h3 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", color: "var(--dark)", marginBottom: 6 }}>¡Venta registrada!</h3>
+            <p style={{ fontSize: 13, color: "var(--mid)", marginBottom: 24 }}>¿Deseas imprimir el recibo ahora?</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setMostrarModalImpresion(false)} style={{ flex: 1, background: "var(--border)", color: "var(--dark)", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>No, continuar</button>
+              <button onClick={() => { setMostrarModalImpresion(false); setTimeout(() => window.print(), 100); }} style={{ flex: 1, background: "var(--dark)", color: "white", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>🖨️ Imprimir</button>
             </div>
           </div>
         </div>
