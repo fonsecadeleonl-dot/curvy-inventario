@@ -2,7 +2,7 @@ import { useState } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 
-const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 const PROMPT = `Eres un extractor de datos para una tienda de ropa plus-size en Colombia.
 Analiza esta imagen de factura de compra y extrae TODOS los productos.
@@ -62,17 +62,24 @@ async function pdfPaginaABase64(file) {
   return canvas.toDataURL("image/png").split(",")[1];
 }
 
-async function llamarGemini(base64, mediaType = "image/png") {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
-  const res = await fetch(url, {
+async function llamarGroq(base64, mediaType = "image/png") {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "authorization": `Bearer ${GROQ_KEY}`
+    },
     body: JSON.stringify({
-      contents: [{ parts: [
-        { inline_data: { mime_type: mediaType, data: base64 } },
-        { text: PROMPT }
-      ]}],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      temperature: 0.1,
+      max_tokens: 2048,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: `data:${mediaType};base64,${base64}` } },
+          { type: "text", text: PROMPT }
+        ]
+      }]
     })
   });
   if (!res.ok) {
@@ -80,8 +87,8 @@ async function llamarGemini(base64, mediaType = "image/png") {
     throw new Error(err.error?.message || `HTTP ${res.status}`);
   }
   const data = await res.json();
-  const texto = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-  if (!texto) throw new Error("Gemini no devolvió respuesta");
+  const texto = data.choices?.[0]?.message?.content?.trim();
+  if (!texto) throw new Error("Groq no devolvió respuesta");
   const jsonStr = texto.startsWith("[") ? texto : texto.match(/\[[\s\S]*\]/)?.[0];
   if (!jsonStr) throw new Error("La IA no devolvió JSON válido");
   return JSON.parse(jsonStr);
@@ -101,9 +108,9 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
   const [resumen, setResumen]   = useState({ nuevos: 0, restock: 0 });
 
   const procesarArchivo = async (file) => {
-    if (!GEMINI_KEY) {
+    if (!GROQ_KEY) {
       setEstado("error");
-      setErrorMsg("Falta VITE_GEMINI_API_KEY en las variables de entorno.");
+      setErrorMsg("Falta VITE_GROQ_API_KEY en las variables de entorno.");
       return;
     }
     setEstado("procesando");
@@ -122,7 +129,7 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
       }
 
       setProgreso("Analizando factura con IA…");
-      const productos = await llamarGemini(base64, mediaType);
+      const productos = await llamarGroq(base64, mediaType);
       if (!productos.length) throw new Error("No se encontraron productos en la imagen");
 
       setProgreso("Verificando SKUs en inventario…");
