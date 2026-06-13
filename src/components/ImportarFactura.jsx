@@ -1,40 +1,45 @@
 import { useState } from "react";
 import { db } from "../firebase";
-import { collection, addDoc } from "firebase/firestore";
-import { Icon } from "../utils.jsx";
+import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 
 const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const PROMPT = `Eres un extractor de datos para una tienda de ropa plus-size en Colombia.
-Analiza esta imagen de factura de compra y extrae TODOS los productos/referencias que aparecen.
+Analiza esta imagen de factura de compra y extrae TODOS los productos.
 
-Responde ÚNICAMENTE con un JSON array sin texto adicional, con este formato exacto:
+La factura tiene este formato:
+- SKU: código único del producto (alfanumérico, puede aparecer como "Ref", "SKU", "Código" o similar)
+- Descripción: nombre de la prenda tal cual aparece
+- Cantidad: aparece con formato "x1", "x2", "x3" etc — extrae solo el número
+- Talla: ejemplos "XL", "1XL", "2XL", "S", "M" — respétalas exactamente como aparecen
+- Costo unitario: precio por unidad en pesos colombianos
+
+REGLA CRÍTICA: Si el mismo SKU aparece varias veces con distintas tallas, agrúpalas en UN SOLO objeto con array de tallas.
+
+Responde ÚNICAMENTE con un JSON array, sin texto adicional, sin markdown:
 [
   {
-    "referencia": "código o referencia del producto",
-    "descripcion": "nombre o descripción de la prenda",
+    "sku": "ABC123",
+    "descripcion": "Blusa manga larga estampada",
     "tallas": [
-      {"talla": "S", "cantidad": 2},
-      {"talla": "XL", "cantidad": 1}
+      {"talla": "XL", "cantidad": 2},
+      {"talla": "1XL", "cantidad": 1}
     ],
-    "costoUnitario": 45000
+    "costoUnitario": 38000
   }
 ]
 
-Reglas importantes:
-- costoUnitario debe ser número (sin puntos ni signos de moneda)
-- Si una referencia tiene varias tallas listadas por separado, agrúpalas en el array "tallas"
-- Si no hay detalle de tallas, usa: [{"talla": "Única", "cantidad": total_unidades}]
-- Si no puedes leer un campo con certeza, usa null
-- No incluyas NADA fuera del JSON (sin markdown, sin explicaciones)`;
+Reglas:
+- costoUnitario: número entero sin puntos ni símbolos (38000 no $38.000)
+- cantidad: número entero (extraer el número de "x2" → 2)
+- talla: exactamente como aparece en la imagen
+- Si no puedes leer un campo con certeza usa null
+- NADA fuera del JSON`;
 
 async function imagenABase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(",")[1];
-      resolve(base64);
-    };
+    reader.onload = () => resolve(reader.result.split(",")[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -46,7 +51,6 @@ async function pdfPaginaABase64(file) {
     "pdfjs-dist/build/pdf.worker.min.mjs",
     import.meta.url
   ).toString();
-
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const page = await pdf.getPage(1);
@@ -55,32 +59,26 @@ async function pdfPaginaABase64(file) {
   canvas.width = viewport.width;
   canvas.height = viewport.height;
   await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-  const base64 = canvas.toDataURL("image/png").split(",")[1];
-  return base64;
+  return canvas.toDataURL("image/png").split(",")[1];
 }
 
 async function llamarGemini(base64, mediaType = "image/png") {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
-
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      contents: [{
-        parts: [
-          { inline_data: { mime_type: mediaType, data: base64 } },
-          { text: PROMPT }
-        ]
-      }],
+      contents: [{ parts: [
+        { inline_data: { mime_type: mediaType, data: base64 } },
+        { text: PROMPT }
+      ]}],
       generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
     })
   });
-
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.error?.message || `HTTP ${res.status}`);
   }
-
   const data = await res.json();
   const texto = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
   if (!texto) throw new Error("Gemini no devolvió respuesta");
@@ -89,10 +87,18 @@ async function llamarGemini(base64, mediaType = "image/png") {
   return JSON.parse(jsonStr);
 }
 
+async function buscarPrendaPorSku(sku) {
+  if (!sku) return null;
+  const snap = await getDocs(query(collection(db, "prendas"), where("sku", "==", String(sku).trim())));
+  if (snap.empty) return null;
+  return { id: snap.docs[0].id, ...snap.docs[0].data() };
+}
+
 export default function ImportarFactura({ onBorradorCreado, onClose }) {
-  const [estado, setEstado] = useState("idle"); // idle | procesando | ok | error
+  const [estado, setEstado]   = useState("idle");
   const [progreso, setProgreso] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [resumen, setResumen]   = useState({ nuevos: 0, restock: 0 });
 
   const procesarArchivo = async (file) => {
     if (!GEMINI_KEY) {
@@ -100,14 +106,12 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
       setErrorMsg("Falta VITE_GEMINI_API_KEY en las variables de entorno.");
       return;
     }
-
     setEstado("procesando");
     setErrorMsg("");
 
     try {
       setProgreso("Leyendo archivo…");
       let base64, mediaType;
-
       if (file.type === "application/pdf") {
         setProgreso("Convirtiendo PDF a imagen…");
         base64 = await pdfPaginaABase64(file);
@@ -119,27 +123,50 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
 
       setProgreso("Analizando factura con IA…");
       const productos = await llamarGemini(base64, mediaType);
-
       if (!productos.length) throw new Error("No se encontraron productos en la imagen");
 
-      setProgreso(`Guardando ${productos.length} borradores…`);
+      setProgreso("Verificando SKUs en inventario…");
       const fecha = new Date().toISOString();
-      const lote = `LOTE-${Date.now()}`;
+      const lote  = `LOTE-${Date.now()}`;
+      let nuevos = 0, restock = 0;
 
       for (const p of productos) {
-        await addDoc(collection(db, "borradores"), {
-          ...p,
-          lote,
-          fecha,
-          estado: "pendiente",
-          precioVenta: "",
-          categoria: "",
-          imagenes: [],
-        });
+        const prendaExistente = await buscarPrendaPorSku(p.sku);
+
+        if (prendaExistente) {
+          // RESTOCK — prenda ya existe con ese SKU
+          await addDoc(collection(db, "borradores"), {
+            ...p,
+            lote,
+            fecha,
+            estado: "pendiente",
+            tipo: "restock",
+            prendaExistenteId:     prendaExistente.id,
+            prendaExistenteNombre: prendaExistente.descripcion,
+            stockActualPorTalla:   prendaExistente.stockPorTalla || {},
+            categoria:             prendaExistente.categoria || "Blusa",
+            precioVenta:           prendaExistente.precioVenta || "",
+          });
+          restock++;
+        } else {
+          // NUEVO — no existe ese SKU
+          await addDoc(collection(db, "borradores"), {
+            ...p,
+            lote,
+            fecha,
+            estado: "pendiente",
+            tipo: "nuevo",
+            precioVenta: "",
+            categoria:   "Blusa",
+            imagenes:    [],
+          });
+          nuevos++;
+        }
       }
 
+      setResumen({ nuevos, restock });
       setEstado("ok");
-      setProgreso(`¡${productos.length} prendas listas para revisar!`);
+      setProgreso(`¡${productos.length} ${productos.length === 1 ? "prenda" : "prendas"} procesadas!`);
       onBorradorCreado?.();
     } catch (err) {
       setEstado("error");
@@ -157,7 +184,6 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div className="animate" style={{ background: "#fff", borderRadius: 24, padding: 30, width: "90%", maxWidth: 420, boxShadow: "0 8px 40px rgba(0,0,0,0.15)" }}>
 
-        {/* HEADER */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div>
             <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, color: "var(--rosa-deep)", margin: 0 }}>Importar Factura</h3>
@@ -166,29 +192,20 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
           <button onClick={onClose} style={{ background: "var(--creme)", border: "none", width: 34, height: 34, borderRadius: "50%", cursor: "pointer", fontSize: 18, color: "var(--mid)" }}>×</button>
         </div>
 
-        {/* ZONA DROP */}
         {estado === "idle" && (
-          <label
-            onDrop={onDrop}
-            onDragOver={e => e.preventDefault()}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, border: "2px dashed var(--rosa-soft)", borderRadius: 16, padding: "32px 20px", cursor: "pointer", background: "var(--rosa-pale)", textAlign: "center" }}
-          >
+          <label onDrop={onDrop} onDragOver={e => e.preventDefault()}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, border: "2px dashed var(--rosa-soft)", borderRadius: 16, padding: "32px 20px", cursor: "pointer", background: "var(--rosa-pale)", textAlign: "center" }}>
             <div style={{ fontSize: 40 }}>🧾</div>
             <p style={{ fontWeight: 700, color: "var(--rosa-deep)", margin: 0 }}>Arrastra aquí tu factura</p>
             <p style={{ fontSize: 12, color: "var(--mid)", margin: 0 }}>o haz clic para seleccionar</p>
             <span style={{ background: "linear-gradient(135deg, var(--rosa-deep), var(--rosa))", color: "#fff", borderRadius: 10, padding: "10px 24px", fontWeight: 700, fontSize: 13 }}>
               Seleccionar archivo
             </span>
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              style={{ display: "none" }}
-              onChange={e => e.target.files[0] && procesarArchivo(e.target.files[0])}
-            />
+            <input type="file" accept="image/*,.pdf" style={{ display: "none" }}
+              onChange={e => e.target.files[0] && procesarArchivo(e.target.files[0])} />
           </label>
         )}
 
-        {/* PROCESANDO */}
         {estado === "procesando" && (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ fontSize: 40, marginBottom: 16, animation: "pulseLoader 1.5s infinite ease-in-out" }}>✨</div>
@@ -197,19 +214,28 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
           </div>
         )}
 
-        {/* ÉXITO */}
         {estado === "ok" && (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: 44, marginBottom: 12 }}>🎉</div>
             <p style={{ fontWeight: 700, color: "var(--success)", fontSize: 16 }}>{progreso}</p>
-            <p style={{ fontSize: 12, color: "var(--mid)", marginTop: 6, marginBottom: 20 }}>Revísalos en la Cola de Revisión</p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", margin: "12px 0 20px" }}>
+              {resumen.nuevos > 0 && (
+                <span style={{ background: "#E8F5E9", color: "var(--success)", padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                  ✨ {resumen.nuevos} nueva{resumen.nuevos !== 1 ? "s" : ""}
+                </span>
+              )}
+              {resumen.restock > 0 && (
+                <span style={{ background: "#E3F2FD", color: "#1565C0", padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                  📦 {resumen.restock} restock
+                </span>
+              )}
+            </div>
             <button onClick={onClose} style={{ background: "linear-gradient(135deg, var(--success), #43A047)", color: "#fff", border: "none", borderRadius: 12, padding: "12px 28px", fontWeight: 700, cursor: "pointer" }}>
               Ver borradores
             </button>
           </div>
         )}
 
-        {/* ERROR */}
         {estado === "error" && (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>

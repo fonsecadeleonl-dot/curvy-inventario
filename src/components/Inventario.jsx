@@ -16,8 +16,8 @@ export default function Inventario({ prendas, setPrendas }) {
   const [mostrarBorradores, setMostrarBorradores] = useState(false); 
   
   // 1. Agregamos las nuevas tallas al estado inicial
-  const formBase = { 
-    codigo: "", descripcion: "", stockMinimo: "1", 
+  const formBase = {
+    codigo: "", descripcion: "", sku: "", stockMinimo: "1",
     costoCompra: "", precioVenta: "", categoria: "Blusa", imagen: "", imagenes: [],
     tallas: { "XS": "", "S": "", "M": "", "L": "", "XL": "", "0XL": "", "1XL": "", "2XL": "", "3XL": "", "4XL": "", "5XL": "" }
   };
@@ -119,8 +119,9 @@ export default function Inventario({ prendas, setPrendas }) {
     }
 
     const datosGuardar = {
-      codigo: codigoFinal, 
-      descripcion: form.descripcion, 
+      codigo: codigoFinal,
+      sku: (form.sku || "").trim(),
+      descripcion: form.descripcion,
       stockPorTalla: stockPorTallaObj,
       stock: totalStockForm, 
       stockMinimo: Number(form.stockMinimo) || 1,
@@ -338,7 +339,12 @@ export default function Inventario({ prendas, setPrendas }) {
               <label style={{fontSize: 11, color: 'var(--mid)', paddingLeft: 4}}>Descripción de la Prenda</label>
               <input value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})} style={{width: "100%"}} />
             </div>
-            
+
+            <div style={{ width: "100%" }}>
+              <label style={{fontSize: 11, color: 'var(--mid)', paddingLeft: 4}}>SKU del Proveedor <span style={{color:"var(--mid)", fontWeight:400}}>(opcional — para resurtido automático)</span></label>
+              <input value={form.sku || ""} onChange={e => setForm({...form, sku: e.target.value})} style={{width: "100%"}} placeholder="Ej: ABC-123" />
+            </div>
+
             <div className="grid-precios">
               <div style={{ width: "100%" }}>
                 <label style={{fontSize: 11, color: 'var(--mid)', paddingLeft: 4}}>Categoría</label>
