@@ -62,6 +62,8 @@ button { cursor: pointer; font-family: 'DM Sans', sans-serif; }
 
 @media print {
   body { background: white; margin: 0; padding: 0; }
-  .app-wrapper, .nav-menu { display: none !important; }
-  #recibo-imprimible { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: monospace; color: black; }
+  .nav-menu { display: none !important; }
+  .app-wrapper { visibility: hidden; }
+  #recibo-imprimible { display: block !important; visibility: visible !important; position: fixed; left: 0; top: 0; width: 100%; padding: 30px; font-family: monospace; color: black; background: white; z-index: 99999; }
+  #recibo-imprimible * { visibility: visible !important; }
 }

@@ -263,7 +263,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
             <p style={{ fontSize: 13, color: "var(--mid)", marginBottom: 24 }}>¿Deseas imprimir el recibo ahora?</p>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setMostrarModalImpresion(false)} style={{ flex: 1, background: "var(--border)", color: "var(--dark)", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>No, continuar</button>
-              <button onClick={() => { setMostrarModalImpresion(false); setTimeout(() => window.print(), 100); }} style={{ flex: 1, background: "var(--dark)", color: "white", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>🖨️ Imprimir</button>
+              <button onClick={() => { setMostrarModalImpresion(false); setTimeout(() => window.print(), 300); }} style={{ flex: 1, background: "var(--dark)", color: "white", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>🖨️ Imprimir</button>
             </div>
           </div>
         </div>
