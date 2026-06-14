@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "target": "curvyvup",
     "public": "dist",
     "ignore": [
       "firebase.json",

@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "curvylaura-3eaf4"
+  },
+  "targets": {
+    "curvylaura-3eaf4": {
+      "hosting": {
+        "curvyvup": [
+          "curvyvup"
+        ]
+      }
+    }
   }
 }
