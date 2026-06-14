@@ -55,11 +55,18 @@ export default function ColaBorradores({ setPrendas, onCerrar }) {
           nuevoStock[talla] = (Number(nuevoStock[talla]) || 0) + (Number(cantidad) || 0);
         });
         const nuevoTotal = Object.values(nuevoStock).reduce((s, v) => s + Number(v), 0);
+        const tallasResurtido = {};
+        (b.tallas || []).forEach(({ talla, cantidad }) => { tallasResurtido[talla] = Number(cantidad) || 0; });
+        const historialActual = prendaSnap.data().historial || [];
+        const nuevoHistorial = [
+          ...historialActual,
+          { fecha: new Date().toISOString(), tipo: "resurtido", tallas: tallasResurtido, costoCompra: Number(b.costoUnitario) || 0 }
+        ];
 
-        await updateDoc(prendaRef, { stockPorTalla: nuevoStock, stock: nuevoTotal });
+        await updateDoc(prendaRef, { stockPorTalla: nuevoStock, stock: nuevoTotal, historial: nuevoHistorial });
         setPrendas(p => p.map(pr =>
           pr.id === b.prendaExistenteId
-            ? { ...pr, stockPorTalla: nuevoStock, stock: nuevoTotal }
+            ? { ...pr, stockPorTalla: nuevoStock, stock: nuevoTotal, historial: nuevoHistorial }
             : pr
         ));
       } else {
@@ -76,6 +83,9 @@ export default function ColaBorradores({ setPrendas, onCerrar }) {
           stockPorTalla[talla] = c;
           stockTotal += c;
         });
+        const fechaCreacion = new Date().toISOString();
+        const tallasNueva = {};
+        (b.tallas || []).forEach(({ talla, cantidad }) => { tallasNueva[talla] = Number(cantidad) || 0; });
         const nuevaPrenda = {
           codigo:       b.referencia || `REF-${Date.now()}`,
           sku:          (b.sku || "").trim(),
@@ -87,7 +97,8 @@ export default function ColaBorradores({ setPrendas, onCerrar }) {
           stockPorTalla,
           stockMinimo:  3,
           imagenes:     [],
-          fechaCreacion: new Date().toISOString(),
+          fechaIngreso: fechaCreacion,
+          historial:    [{ fecha: fechaCreacion, tipo: "ingreso", tallas: tallasNueva, costoCompra: Number(b.costoUnitario) || 0 }],
         };
         const ref = await addDoc(collection(db, "prendas"), nuevaPrenda);
         setPrendas(p => [{ id: ref.id, ...nuevaPrenda }, ...p]);
