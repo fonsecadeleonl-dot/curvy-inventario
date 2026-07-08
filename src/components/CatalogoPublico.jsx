@@ -1446,11 +1446,16 @@ export default function CatalogoPublico() {
 
         .categorias-grid { display: flex; gap: 20px; overflow-x: auto; padding: 0 24px; scrollbar-width: none; justify-content: flex-start; }
         .categorias-grid::-webkit-scrollbar { display: none; }
-        @media (min-width: 768px) { .categorias-grid { justify-content: center; flex-wrap: wrap; } }
+        @media (min-width: 768px) { .categorias-grid { justify-content: center; flex-wrap: wrap; gap: 36px; } }
         .categoria-item { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; flex-shrink: 0; width: 100px; }
         .categoria-circulo { width: 88px; height: 88px; border-radius: 50%; overflow: hidden; box-shadow: 0 4px 16px rgba(139,26,77,0.15); transition: transform 0.2s ease; }
         .categoria-item:hover .categoria-circulo { transform: scale(1.06); }
         .categoria-nombre { font-size: 13px; font-weight: 700; color: #1a1a1a; margin: 0; }
+        @media (min-width: 768px) {
+          .categoria-item { width: 190px; gap: 16px; }
+          .categoria-circulo { width: 175px; height: 175px; box-shadow: 0 6px 22px rgba(139,26,77,0.18); }
+          .categoria-nombre { font-size: 17px; }
+        }
 
         .mas-pedidas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         @media (max-width: 600px) { .mas-pedidas-grid { display: flex; overflow-x: auto; gap: 14px; scrollbar-width: none; } .mas-pedidas-grid::-webkit-scrollbar { display: none; } .mas-pedidas-grid > * { flex-shrink: 0; width: 220px; } }
