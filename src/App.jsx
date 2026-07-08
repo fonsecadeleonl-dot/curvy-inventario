@@ -10,6 +10,7 @@ import Dashboard from "./components/Dashboard.jsx";
 import Inventario from "./components/Inventario.jsx";
 import Ventas from "./components/Ventas.jsx";
 import CatalogoPublico from "./components/CatalogoPublico.jsx"; // NUEVO
+import Configuracion from "./components/Configuracion.jsx";
 
 export default function App() {
   const [usuario, setUsuario] = useState(undefined);
@@ -45,11 +46,12 @@ export default function App() {
     fetchData();
   }, [usuario]);
 
-  const tabs = [ 
-    { id: "inicio", label: "Inicio", icon: "dashboard" }, 
-    { id: "dashboard", label: "Dashboard", icon: "chart" }, 
-    { id: "inventario", label: "Inventario", icon: "inventory" }, 
-    { id: "ventas", label: "Ventas", icon: "sales" } 
+  const tabs = [
+    { id: "inicio", label: "Inicio", icon: "dashboard" },
+    { id: "dashboard", label: "Dashboard", icon: "chart" },
+    { id: "inventario", label: "Inventario", icon: "inventory" },
+    { id: "ventas", label: "Ventas", icon: "sales" },
+    { id: "configuracion", label: "Config", icon: "settings" }
   ];
 
   // LOGICA PARA USUARIOS NO AUTENTICADOS (El público o tú entrando a loguearte)
@@ -97,6 +99,7 @@ export default function App() {
           {tab === "dashboard"  && <Dashboard prendas={prendas} ventas={ventas} facturas={facturas} />}
           {tab === "inventario" && <Inventario prendas={prendas} setPrendas={setPrendas} />}
           {tab === "ventas"     && <Ventas prendas={prendas} setPrendas={setPrendas} ventas={ventas} setVentas={setVentas} facturas={facturas} setFacturas={setFacturas} />}
+          {tab === "configuracion" && <Configuracion />}
         </div>
         
         <nav className="nav-menu no-print">
