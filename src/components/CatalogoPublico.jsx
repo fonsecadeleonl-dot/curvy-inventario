@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, addDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
 import { fmt, Icon } from "../utils.jsx";
 
 const NUMERO_WA = "573017886206";
@@ -561,7 +561,7 @@ function SeccionInstagram({ fotos }) {
 }
 
 /* ── FOOTER ──────────────────────────────────────────── */
-function Footer({ onLoginClick }) {
+function Footer() {
   return (
     <footer style={{ background: "#1C0F17", color: "#fff", padding: "52px 20px 0" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -605,9 +605,6 @@ function Footer({ onLoginClick }) {
             </div>
             <p style={{ color: "#7B4F6A", fontSize: 12, margin: 0 }}>Copyright {new Date().getFullYear()} © Curvy Vup</p>
           </div>
-        </div>
-        <div style={{ textAlign: "center", padding: "12px 0 20px" }}>
-          <button onClick={onLoginClick} style={{ background: "none", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.18)", fontSize: 9, padding: "4px 10px", borderRadius: 20, cursor: "pointer" }}>Acceso Administrativo</button>
         </div>
       </div>
     </footer>
@@ -850,8 +847,128 @@ function SobreEstaPrenda({ prenda }) {
       {prenda.descripcion && lista.length > 0 && <hr style={{ border: "none", borderTop: "1px solid #F5E6EE", margin: "20px 0" }} />}
       {prenda.descripcion && (
         <div style={{ background: "#FFF5F7", borderRadius: 14, padding: "16px 20px", borderLeft: "3px solid #C2185B" }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "#8B1A4D", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1, display: "flex", alignItems: "center", gap: 6 }}>💬 Reseña del producto</p>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "#8B1A4D", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1, display: "flex", alignItems: "center", gap: 6 }}>📝 Descripción</p>
           <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8, margin: 0, whiteSpace: "pre-line" }}>{prenda.descripcion}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── ESTRELLAS (input y display) ─────────────────────── */
+function Estrellas({ valor, onChange, size = 16 }) {
+  const interactivo = !!onChange;
+  return (
+    <div style={{ display: "flex", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span key={n} onClick={interactivo ? () => onChange(n) : undefined}
+          style={{ fontSize: size, color: n <= valor ? "#F5A623" : "#E0D5DB", cursor: interactivo ? "pointer" : "default", lineHeight: 1 }}>★</span>
+      ))}
+    </div>
+  );
+}
+
+/* ── RESEÑAS DE CLIENTAS ──────────────────────────────── */
+function ResenasProducto({ prendaId }) {
+  const [resenas, setResenas] = useState(null); // null = cargando
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [nombre, setNombre] = useState("");
+  const [estrellas, setEstrellas] = useState(0);
+  const [texto, setTexto] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    setResenas(null);
+    getDocs(query(collection(db, "resenas"), where("prendaId", "==", prendaId)))
+      .then((snap) => {
+        const lista = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        lista.sort((a, b) => (b.fecha?.toMillis?.() || 0) - (a.fecha?.toMillis?.() || 0));
+        setResenas(lista);
+      })
+      .catch(() => setResenas([]));
+  }, [prendaId]);
+
+  const enviar = async (e) => {
+    e.preventDefault();
+    if (!nombre.trim() || !texto.trim() || estrellas === 0) return;
+    setEnviando(true);
+    try {
+      await addDoc(collection(db, "resenas"), {
+        prendaId, nombre: nombre.trim(), estrellas, texto: texto.trim(), fecha: serverTimestamp(),
+      });
+      setFormAbierto(false);
+      setResenas((prev) => [{ id: "temp", prendaId, nombre: nombre.trim(), estrellas, texto: texto.trim() }, ...(prev || [])]);
+    } catch {
+      // si falla el envío, dejamos el form abierto para reintentar
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  if (resenas === null) return null; // evita parpadeo de caja vacía mientras carga
+
+  const promedio = resenas.length > 0 ? (resenas.reduce((s, r) => s + Number(r.estrellas || 0), 0) / resenas.length) : 0;
+
+  return (
+    <div style={{ background: "white", borderRadius: 20, padding: 28, marginTop: 32, border: "1px solid #F5E6EE", boxShadow: "0 2px 16px rgba(139,26,77,0.05)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "2px solid #FCE4EC" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 20 }}>💬</span>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a", margin: 0 }}>Reseñas de clientas</h2>
+          {resenas.length > 0 && <span style={{ fontSize: 13, color: "#999", fontWeight: 600 }}>({resenas.length})</span>}
+        </div>
+        {resenas.length > 0 && !formAbierto && (
+          <button onClick={() => setFormAbierto(true)} style={{ background: "#FCE4EC", border: "1px solid #F48FB1", color: "#8B1A4D", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20, cursor: "pointer" }}>Escribir reseña</button>
+        )}
+      </div>
+
+      {resenas.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+          <Estrellas valor={Math.round(promedio)} />
+          <span style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>{promedio.toFixed(1)} de 5</span>
+        </div>
+      )}
+
+      {resenas.length === 0 && !formAbierto && (
+        <div style={{ textAlign: "center", padding: "24px 12px" }}>
+          <p style={{ fontSize: 32, margin: "0 0 8px" }}>🌸</p>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "#333", margin: "0 0 4px" }}>Aún no hay reseñas para esta prenda</p>
+          <p style={{ fontSize: 13, color: "#999", margin: "0 0 18px" }}>Sé la primera en dejar tu reseña</p>
+          <button onClick={() => setFormAbierto(true)} style={{ background: "#C2185B", border: "none", color: "white", fontSize: 13, fontWeight: 700, padding: "10px 22px", borderRadius: 20, cursor: "pointer" }}>Escribir reseña</button>
+        </div>
+      )}
+
+      {formAbierto && (
+        <form onSubmit={enviar} style={{ background: "#FFF5F7", borderRadius: 14, padding: 20, marginBottom: resenas.length > 0 ? 20 : 0, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 700, color: "#8B1A4D", margin: "0 0 6px" }}>Tu calificación</p>
+            <Estrellas valor={estrellas} onChange={setEstrellas} size={24} />
+          </div>
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu nombre" maxLength={40}
+            style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #F3C9DC", fontSize: 14, fontFamily: "inherit" }} />
+          <textarea value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Cuéntanos qué te pareció la prenda" maxLength={500} rows={3}
+            style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #F3C9DC", fontSize: 14, fontFamily: "inherit", resize: "vertical" }} />
+          <div style={{ display: "flex", gap: 10 }}>
+            <button type="submit" disabled={enviando || !nombre.trim() || !texto.trim() || estrellas === 0}
+              style={{ background: "#C2185B", border: "none", color: "white", fontSize: 13, fontWeight: 700, padding: "10px 22px", borderRadius: 20, cursor: enviando ? "default" : "pointer", opacity: enviando || !nombre.trim() || !texto.trim() || estrellas === 0 ? 0.5 : 1 }}>
+              {enviando ? "Enviando..." : "Publicar reseña"}
+            </button>
+            <button type="button" onClick={() => setFormAbierto(false)} style={{ background: "none", border: "none", color: "#999", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
+          </div>
+        </form>
+      )}
+
+      {resenas.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {resenas.map((r) => (
+            <div key={r.id} style={{ borderBottom: "1px solid #FFF5F7", paddingBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#333" }}>{r.nombre}</span>
+                <Estrellas valor={Number(r.estrellas) || 0} />
+              </div>
+              <p style={{ fontSize: 14, color: "#555", lineHeight: 1.6, margin: 0 }}>{r.texto}</p>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -994,6 +1111,8 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
 
         <SobreEstaPrenda prenda={prenda} />
 
+        <ResenasProducto prendaId={prenda?.id} />
+
         <div style={{ background: "linear-gradient(135deg, #8B1A4D, #C2185B)", borderRadius: 20, padding: "24px 32px", marginTop: 32, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
             <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 2, margin: "0 0 6px" }}>¿TE GUSTÓ ESTA PRENDA?</p>
@@ -1126,7 +1245,7 @@ function CarritoDrawer({ carrito, setCarrito, onCerrar, onEnviar }) {
 }
 
 /* ── COMPONENTE PRINCIPAL ────────────────────────────── */
-export default function CatalogoPublico({ onLoginClick }) {
+export default function CatalogoPublico() {
   const [prendas, setPrendas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState("");
@@ -1308,7 +1427,7 @@ export default function CatalogoPublico({ onLoginClick }) {
       <SeccionCTA onVerCatalogo={irACatalogo} />
       <SeccionCarrusel title="Ofertas de la Semana 🔥" prendas={enOfertas} bg="#FAF7F4" onCardClick={setDetalle} onVerTodas={irACatalogo} />
       <SeccionInstagram fotos={paraInstagram} />
-      <Footer onLoginClick={onLoginClick} />
+      <Footer />
       <BotonWhatsappFlotante />
 
       <style>{`

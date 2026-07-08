@@ -20,8 +20,8 @@ export default function App() {
   const [facturas, setFacturas] = useState([]); 
   const [cargando, setCargando] = useState(true);
 
-  // NUEVO ESTADO: Para alternar entre la tienda y el login
-  const [mostrarLogin, setMostrarLogin] = useState(false);
+  // Acceso administrativo solo por ruta directa /admin, sin link visible
+  const [mostrarLogin, setMostrarLogin] = useState(window.location.pathname === "/admin");
 
   useEffect(() => { 
     const unsub = onAuthStateChanged(auth, (user) => setUsuario(user)); 
@@ -62,11 +62,11 @@ export default function App() {
         <style>{globalStyles}</style>
         {!mostrarLogin ? (
           // El público ve esto por defecto
-          <CatalogoPublico onLoginClick={() => setMostrarLogin(true)} />
+          <CatalogoPublico />
         ) : (
-          // Tú ves esto cuando le das al botón secreto
+          // Solo accesible entrando directo a /admin
           <div style={{ position: "relative" }}>
-            <button onClick={() => setMostrarLogin(false)} style={{ position: "absolute", top: 20, left: 20, zIndex: 10, background: "rgba(255,255,255,0.5)", backdropFilter: "blur(4px)", border: "1px solid var(--border)", borderRadius: 50, padding: "8px 16px", color: "var(--dark)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={() => { window.history.pushState({}, "", "/"); setMostrarLogin(false); }} style={{ position: "absolute", top: 20, left: 20, zIndex: 10, background: "rgba(255,255,255,0.5)", backdropFilter: "blur(4px)", border: "1px solid var(--border)", borderRadius: 50, padding: "8px 16px", color: "var(--dark)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
               ← Volver a la Tienda
             </button>
             <LoginScreen />
@@ -90,7 +90,7 @@ export default function App() {
               <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: 24, fontWeight: 700, color: "var(--rosa-deep)", lineHeight: 1 }}>Curvy</p>
               <p style={{ fontSize: 10, color: "var(--mid)", letterSpacing: 1.5, textTransform: "uppercase", marginTop: 2 }}>Panel de gestión</p>
             </div>
-            <button onClick={() => {signOut(auth); setMostrarLogin(false);}} style={{ background: "transparent", border: "none", color: "var(--danger)", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 8 }}>
+            <button onClick={() => {signOut(auth); setMostrarLogin(false); window.history.pushState({}, "", "/");}} style={{ background: "transparent", border: "none", color: "var(--danger)", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 8 }}>
                <Icon name="logout" size={14} /> Salir
             </button>
           </div>
