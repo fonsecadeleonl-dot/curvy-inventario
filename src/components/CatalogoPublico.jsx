@@ -833,7 +833,7 @@ function SobreEstaPrenda({ prenda }) {
       {lista.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#999", margin: "0 0 14px", textTransform: "uppercase", letterSpacing: "1.5px" }}>🏷️ Características destacadas</p>
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
             {visibles.map((linea, i) => (
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "11px 0", borderBottom: i < visibles.length - 1 ? "1px solid #FFF5F7" : "none", animation: "aparecer2 0.3s ease forwards", animationDelay: `${i * 0.05}s`, opacity: 0 }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: "linear-gradient(135deg, #8B1A4D, #C2185B)", flexShrink: 0, marginTop: 5, boxShadow: "0 2px 6px rgba(194,24,91,0.3)" }} />
@@ -841,9 +841,13 @@ function SobreEstaPrenda({ prenda }) {
               </div>
             ))}
           </div>
+          {!verTodas && hayMas && <div style={{ height: 40, marginTop: -40, background: "linear-gradient(to bottom, transparent, white)", pointerEvents: "none", position: "relative", zIndex: 1 }} />}
           {hayMas && (
-            <button onClick={() => setVerTodas((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#C2185B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: "8px 0 0", fontFamily: "inherit" }}>
-              {verTodas ? "Ver menos ▲" : `Ver las ${lista.length - 3} características restantes ▼`}
+            <button onClick={() => setVerTodas((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#C2185B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: "8px 0 0", marginTop: 4, fontFamily: "inherit" }}>
+              {verTodas ? "Ver menos" : `Ver las ${lista.length - 3} características restantes`}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C2185B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points={verTodas ? "18 15 12 9 6 15" : "6 9 12 15 18 9"} />
+              </svg>
             </button>
           )}
         </div>

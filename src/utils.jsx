@@ -32,23 +32,48 @@ export const fmtFecha = (iso) => {
   return new Date(iso).toLocaleDateString("es-CO", { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-export const comprimirImagen = (file) => {
-  return new Promise((resolve) => {
+// Firefox/Chrome/Edge saben codificar WebP por canvas; Safari viejo no — ahí cae a JPEG solo.
+const SOPORTA_WEBP = (() => {
+  try {
+    const c = document.createElement("canvas");
+    c.width = c.height = 1;
+    return c.toDataURL("image/webp").startsWith("data:image/webp");
+  } catch { return false; }
+})();
+
+// Convierte a WebP (o JPEG si el navegador no soporta WebP), redimensiona sin
+// deformar y baja calidad en pasos hasta caber en limiteKB — así una foto
+// nunca arriesga el límite de 1MiB por documento de Firestore (guardamos las
+// imágenes en base64 dentro de "prendas", no hay Firebase Storage en este proyecto).
+export const comprimirImagen = (file, maxAncho = 900, limiteKB = 200) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
+    reader.onerror = () => reject(new Error("No se pudo leer el archivo"));
     reader.onload = (e) => {
       const img = new Image();
-      img.src = e.target.result;
+      img.onerror = () => reject(new Error("Imagen inválida"));
       img.onload = () => {
+        let ancho = img.width, alto = img.height;
+        if (ancho > maxAncho) { alto = Math.round((alto * maxAncho) / ancho); ancho = maxAncho; }
         const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 300;
-        const scaleSize = MAX_WIDTH / img.width;
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
+        canvas.width = ancho;
+        canvas.height = alto;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.6));
+        ctx.fillStyle = "#FFFFFF"; // fondo blanco para PNG con transparencia
+        ctx.fillRect(0, 0, ancho, alto);
+        ctx.drawImage(img, 0, 0, ancho, alto);
+
+        const formato = SOPORTA_WEBP ? "image/webp" : "image/jpeg";
+        let calidad = 0.82;
+        let resultado = canvas.toDataURL(formato, calidad);
+        while (resultado.length > limiteKB * 1024 * 1.37 && calidad > 0.45) {
+          calidad -= 0.1;
+          resultado = canvas.toDataURL(formato, calidad);
+        }
+        resolve(resultado);
       };
+      img.src = e.target.result;
     };
   });
 };

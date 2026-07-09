@@ -20,6 +20,7 @@ export default function Inventario({ prendas, setPrendas }) {
   const [ajusteRapido, setAjusteRapido] = useState(null);
   const [guardandoAjuste, setGuardandoAjuste] = useState(false);
   const [historialAbierto, setHistorialAbierto] = useState(null);
+  const [optimizando, setOptimizando] = useState(null);
 
   const formBase = {
     codigo: "", descripcion: "", sku: "", stockMinimo: "1",
@@ -99,11 +100,14 @@ export default function Inventario({ prendas, setPrendas }) {
     if (files.length === 0) return;
     if (form.imagenes.length + files.length > 4) return showToast("⚠️ Máximo 4 fotos por prenda", "warn");
     const nuevasImagenes = [];
-    for (let file of files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       if (file.size > 2 * 1024 * 1024) { showToast("⚠️ Una imagen supera los 2MB, fue omitida.", "warn"); continue; }
-      try { nuevasImagenes.push(await comprimirImagen(file)); }
+      setOptimizando(`Optimizando foto ${i + 1} de ${files.length}...`);
+      try { nuevasImagenes.push(await comprimirImagen(file, 900)); }
       catch { showToast("Error procesando imagen", "danger"); }
     }
+    setOptimizando(null);
     setForm({ ...form, imagenes: [...form.imagenes, ...nuevasImagenes] });
   };
 
@@ -304,6 +308,24 @@ export default function Inventario({ prendas, setPrendas }) {
         <ImportarFactura onBorradorCreado={() => { setMostrarImportar(false); setMostrarBorradores(true); }} onClose={() => setMostrarImportar(false)} />
       )}
 
+      {/* OVERLAY OPTIMIZANDO IMAGEN */}
+      {optimizando && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(139,26,77,0.4)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <style>{`
+            @keyframes spin-opt { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            @keyframes loadbar-opt { 0% { width: 0%; margin-left: 0; } 50% { width: 70%; margin-left: 0; } 100% { width: 0%; margin-left: 100%; } }
+          `}</style>
+          <div style={{ background: "white", borderRadius: 20, padding: 32, textAlign: "center", maxWidth: 280, boxShadow: "var(--shadow-lg)" }}>
+            <div style={{ fontSize: 40, marginBottom: 12, animation: "spin-opt 1s linear infinite", display: "inline-block" }}>⚙️</div>
+            <h3 style={{ fontSize: 16, fontFamily: "'Fraunces', serif", fontWeight: 700, color: "var(--rosa-deep)", margin: "0 0 6px" }}>Optimizando imagen</h3>
+            <p style={{ fontSize: 13, color: "var(--mid)", margin: "0 0 14px" }}>{optimizando}</p>
+            <div style={{ height: 4, background: "var(--rosa-pale)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", background: "linear-gradient(90deg, var(--rosa-deep), var(--rosa))", borderRadius: 2, animation: "loadbar-opt 1.5s ease-in-out infinite" }} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL ELIMINAR con imagen */}
       {prendaAEliminar && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -450,8 +472,16 @@ export default function Inventario({ prendas, setPrendas }) {
             </div>
 
             <div style={{ width: "100%" }}>
-              <label style={{ fontSize: 11, color: "var(--mid)", paddingLeft: 4 }}>Descripción de la Prenda</label>
-              <input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} style={{ width: "100%" }} />
+              <label style={{ fontSize: 11, color: "var(--mid)", paddingLeft: 4 }}>
+                Nombre de la Prenda
+                <span style={{ fontWeight: 400 }}> (título que verán tus clientas)</span>
+              </label>
+              <input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} style={{ width: "100%" }} placeholder="Ej: Blusa floral manga corta con encaje" />
+              <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {["Blusa + color + detalle", "Vestido + estilo + ocasión", "Conjunto + material + corte", "Falda + largo + estampado"].map(tip => (
+                  <span key={tip} style={{ fontSize: 10, color: "var(--rosa-deep)", background: "var(--rosa-pale)", padding: "2px 8px", borderRadius: 10 }}>💡 {tip}</span>
+                ))}
+              </div>
             </div>
 
             <div style={{ width: "100%" }}>
