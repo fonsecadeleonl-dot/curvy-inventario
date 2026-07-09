@@ -13,6 +13,7 @@ const IG_HANDLE = "@curvy.vup";
 const TICKER_MENSAJES = ["🌸 Nueva colección disponible", "💕 Envíos a todo Colombia", "✨ Tallas OXL al 4XL", "🛍️ Pide por WhatsApp"];
 
 const tieneImagen = (p) => !!(p.imagenes?.[0]?.trim() || p.imagen?.trim());
+const fechaCreacion = (p) => (p.creadoEn?.toDate ? p.creadoEn.toDate() : new Date(p.fechaIngreso || p.creadoEn || 0));
 const waLink = (texto) => `https://api.whatsapp.com/send?phone=${NUMERO_WA}&text=${encodeURIComponent(texto)}`;
 
 /* ── ICONOS ─────────────────────────────────────────── */
@@ -627,13 +628,7 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
   const tallasDisp = TALLAS_FILTRO.filter((t) => Number(p.stockPorTalla?.[t] || 0) > 0);
   const [tallaSel, setTallaSel] = useState(tallasDisp[0] || "");
   const ultimaUnidad = stockTotal > 0 && stockTotal <= 1;
-  const esNueva = (() => {
-    if (p.creadoEn) {
-      const fecha = p.creadoEn.toDate?.() || new Date(p.creadoEn);
-      return (Date.now() - fecha.getTime()) / (1000 * 60 * 60 * 24) <= 7;
-    }
-    return !!p.nueva;
-  })();
+  const esNueva = (Date.now() - fechaCreacion(p).getTime()) / (1000 * 60 * 60 * 24) <= 7;
 
   return (
     <div onClick={onClick} className="grid-card tarjeta-hover" style={{ background: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", cursor: "pointer", position: "relative" }}>
@@ -1406,7 +1401,7 @@ export default function CatalogoPublico() {
     const copia = [...filtradas];
     if (ordenActivo === "menor") return copia.sort((a, b) => Number(a.precioVenta) - Number(b.precioVenta));
     if (ordenActivo === "mayor") return copia.sort((a, b) => Number(b.precioVenta) - Number(a.precioVenta));
-    return copia.sort((a, b) => (b.creadoEn?.seconds || 0) - (a.creadoEn?.seconds || 0));
+    return copia.sort((a, b) => fechaCreacion(b) - fechaCreacion(a));
   }, [filtradas, ordenActivo]);
 
   const hayMasParaCargar = ordenadas.length > cantidadVisible;
@@ -1433,11 +1428,7 @@ export default function CatalogoPublico() {
   };
 
   const todasConFoto = useMemo(() => prendas.filter(tieneImagen), [prendas]);
-  const recientes = useMemo(() => [...todasConFoto].sort((a, b) => {
-    const fa = a.creadoEn?.toDate?.() || new Date(a.creadoEn || 0);
-    const fb = b.creadoEn?.toDate?.() || new Date(b.creadoEn || 0);
-    return fb - fa;
-  }).slice(0, 14), [todasConFoto]);
+  const recientes = useMemo(() => [...todasConFoto].sort((a, b) => fechaCreacion(b) - fechaCreacion(a)).slice(0, 12), [todasConFoto]);
   const masPedidas = todasConFoto.slice(0, 3);
   const enOfertas = [...todasConFoto].reverse().slice(0, 14);
   const paraInstagram = todasConFoto.slice(0, 6);
