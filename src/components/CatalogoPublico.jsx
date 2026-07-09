@@ -194,7 +194,10 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
         </div>
 
         {buscadorAbierto && (
-          <div style={{ borderTop: "1px solid #f5f5f5", padding: "12px 24px", background: "white", animation: "slideDown 0.2s ease" }}>
+          <div onClick={() => { setBuscadorAbierto(false); onBusqueda(""); setMostrarResultados(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 690, animation: "fadeIn 0.2s ease" }} />
+        )}
+        {buscadorAbierto && (
+          <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 700, borderTop: "1px solid #f5f5f5", padding: "12px 24px", background: "white", boxShadow: "0 16px 40px rgba(0,0,0,0.18)", animation: "slideDown 0.2s ease" }}>
             <div style={{ maxWidth: 600, margin: "0 auto", position: "relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#FAFAFA", border: "1.5px solid #F5E6EE", borderRadius: 50, padding: "12px 20px" }}>
                 <SearchIcon size={16} />
@@ -273,6 +276,7 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
       <style>{`
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-25%); } }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         @media (min-width: 1024px) { .hamburguesa { display: none !important; } .nav-desktop { display: flex !important; } }
         @media (max-width: 1023px) { .nav-desktop { display: none !important; } .hamburguesa { display: flex !important; } }
@@ -371,6 +375,7 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
   const ref = useRef(null);
   const [scrollIdx, setScrollIdx] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [anchoTarjeta, setAnchoTarjeta] = useState(ANCHO_TARJETA);
 
   useAutoScroll(ref, 5000);
   useSwipeScroll(ref);
@@ -378,7 +383,11 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const recalcular = () => setTotalPaginas(Math.max(1, Math.ceil((el.scrollWidth - el.clientWidth) / ANCHO_TARJETA) + 1));
+    const recalcular = () => {
+      const ancho = el.children[0] ? el.children[0].getBoundingClientRect().width + 14 : ANCHO_TARJETA;
+      setAnchoTarjeta(ancho);
+      setTotalPaginas(Math.max(1, Math.ceil((el.scrollWidth - el.clientWidth) / ancho) + 1));
+    };
     const t = setTimeout(recalcular, 60);
     window.addEventListener("resize", recalcular);
     return () => { clearTimeout(t); window.removeEventListener("resize", recalcular); };
@@ -401,13 +410,13 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
         </div>
       </div>
       <div style={{ position: "relative" }}>
-        <button onClick={() => ref.current?.scrollBy({ left: -368, behavior: "smooth" })} style={{ position: "absolute", left: 4, top: "40%", zIndex: 5, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "1px solid #F3E4EF", cursor: "pointer", fontSize: 16 }}>‹</button>
-        <div ref={ref} className="no-scrollbar" onScroll={(e) => setScrollIdx(Math.round(e.target.scrollLeft / ANCHO_TARJETA))}
+        <button onClick={() => ref.current?.scrollBy({ left: -anchoTarjeta * 2, behavior: "smooth" })} style={{ position: "absolute", left: 4, top: "40%", zIndex: 5, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "1px solid #F3E4EF", cursor: "pointer", fontSize: 16 }}>‹</button>
+        <div ref={ref} className="no-scrollbar carrusel-track" onScroll={(e) => setScrollIdx(Math.round(e.target.scrollLeft / anchoTarjeta))}
           style={{ overflowX: "auto", padding: "4px 20px 16px", display: "flex", gap: 14 }}>
           {prendas.map((p) => {
             const img = p.imagenes?.[0] || p.imagen;
             return (
-              <div key={p.id} onClick={() => onCardClick(p)} style={{ flexShrink: 0, width: 170, background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 16px rgba(136,14,79,0.08)", border: "1px solid #F3E4EF", cursor: "pointer", display: "flex", flexDirection: "column" }}>
+              <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover carrusel-card" style={{ flexShrink: 0, width: 170, background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 16px rgba(136,14,79,0.08)", border: "1px solid #F3E4EF", cursor: "pointer", display: "flex", flexDirection: "column" }}>
                 <div style={{ aspectRatio: "3/4", background: "#FDF0F6", overflow: "hidden" }}>
                   {img ? <img src={img} alt={p.descripcion} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
                     : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="image" size={28} color="#E0B8D0" /></div>}
@@ -421,7 +430,7 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
             );
           })}
         </div>
-        <button onClick={() => ref.current?.scrollBy({ left: ANCHO_TARJETA * 2, behavior: "smooth" })} style={{ position: "absolute", right: 4, top: "40%", zIndex: 5, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "1px solid #F3E4EF", cursor: "pointer", fontSize: 16 }}>›</button>
+        <button onClick={() => ref.current?.scrollBy({ left: anchoTarjeta * 2, behavior: "smooth" })} style={{ position: "absolute", right: 4, top: "40%", zIndex: 5, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "1px solid #F3E4EF", cursor: "pointer", fontSize: 16 }}>›</button>
       </div>
       {totalPaginas > 1 && (
         <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 4, paddingBottom: 8 }}>
@@ -429,7 +438,7 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
             const idx = dotsInicio + r;
             const activo = idx === scrollIdx;
             const chico = totalPaginas > 4 && ((r === 0 && dotsInicio > 0) || (r === dotsVisibles - 1 && dotsInicio + dotsVisibles < totalPaginas));
-            return <div key={idx} onClick={() => ref.current?.scrollTo({ left: idx * ANCHO_TARJETA, behavior: "smooth" })}
+            return <div key={idx} onClick={() => ref.current?.scrollTo({ left: idx * anchoTarjeta, behavior: "smooth" })}
               style={{ width: activo ? 20 : chico ? 4 : 6, height: chico ? 4 : 6, borderRadius: 3, background: activo ? "#C2185B" : "#F5C6D8", transition: "all 0.3s ease", cursor: "pointer", alignSelf: "center" }} />;
           })}
         </div>
@@ -493,7 +502,7 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
           {prendas.slice(0, 3).map((p) => {
             const img = p.imagenes?.[0] || p.imagen;
             return (
-              <div key={p.id} onClick={() => onCardClick(p)} style={{ borderRadius: 20, overflow: "hidden", position: "relative", aspectRatio: "3/4", cursor: "pointer", boxShadow: "0 8px 32px rgba(139,26,77,0.18)" }}>
+              <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover" style={{ borderRadius: 20, overflow: "hidden", position: "relative", aspectRatio: "3/4", cursor: "pointer", boxShadow: "0 8px 32px rgba(139,26,77,0.18)" }}>
                 {img ? <img src={img} alt={p.descripcion} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #8B1A4D, #C2185B)" }} />}
                 <span style={{ position: "absolute", top: 12, right: 14, fontSize: 20, zIndex: 2 }}>✨</span>
@@ -627,7 +636,7 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
   })();
 
   return (
-    <div onClick={onClick} className="grid-card" style={{ background: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", cursor: "pointer", position: "relative" }}>
+    <div onClick={onClick} className="grid-card tarjeta-hover" style={{ background: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", cursor: "pointer", position: "relative" }}>
       <div style={{ position: "relative", width: "100%", paddingTop: "120%", overflow: "hidden", background: "#FFF5F7" }}>
         {img ? <img src={img} alt={p.descripcion} loading="lazy" decoding="async" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
           : <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -1183,7 +1192,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                 const img = p.imagenes?.[0] || p.imagen;
                 const s = Number(p.stock || 0);
                 return (
-                  <div key={p.id} onClick={() => { onCargarProducto?.(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  <div key={p.id} onClick={() => { onCargarProducto?.(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="tarjeta-hover"
                     style={{ background: "white", borderRadius: 16, overflow: "hidden", cursor: "pointer", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", position: "relative" }}>
                     {i === 0 && <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🔥 POPULAR</div>}
                     {i === 1 && <div style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div>}
@@ -1545,7 +1554,19 @@ export default function CatalogoPublico() {
         .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; }
         @media (max-width: 700px) { .footer-grid { grid-template-columns: 1fr; gap: 32px; } }
 
-        .grid-card:hover { box-shadow: 0 8px 24px rgba(139,26,77,0.14); }
+        @media (hover: hover) and (pointer: fine) {
+          .tarjeta-hover { transition: transform 0.25s ease-out, box-shadow 0.25s ease-out; }
+          .tarjeta-hover img { transition: transform 0.25s ease-out; }
+          .tarjeta-hover:hover { transform: translateY(-6px); box-shadow: 0 14px 28px rgba(139,26,77,0.18) !important; }
+          .tarjeta-hover:hover img { transform: scale(1.04); }
+        }
+
+        .carrusel-track { scroll-snap-type: x mandatory; scroll-padding-left: 20px; }
+        .carrusel-card { scroll-snap-align: start; }
+        @media (min-width: 768px) {
+          .carrusel-track { gap: 20px !important; max-width: 1400px; margin: 0 auto; }
+          .carrusel-card { width: 280px !important; }
+        }
       `}</style>
     </div>
   );
