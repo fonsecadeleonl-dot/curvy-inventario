@@ -986,6 +986,53 @@ function calcularRelacionados(prenda, todas) {
   return [...mismaCategoria, ...precioSimilar, ...resto].slice(0, 10);
 }
 
+/* ── IMAGEN PRINCIPAL CON ZOOM (hover en desktop) ─────── */
+function ImagenPrincipalZoom({ src, alt, onClick }) {
+  const [pos, setPos] = useState({ x: 50, y: 50 });
+  const [activo, setActivo] = useState(false);
+  const soportaHover = useRef(typeof window !== "undefined" && window.matchMedia?.("(hover: hover) and (pointer: fine)").matches);
+  const ref = useRef(null);
+
+  const mover = (e) => {
+    if (!soportaHover.current || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    setPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
+  };
+
+  return (
+    <div ref={ref} onClick={onClick} onMouseEnter={() => soportaHover.current && setActivo(true)} onMouseLeave={() => setActivo(false)} onMouseMove={mover}
+      style={{ position: "relative", width: "100%", overflow: "hidden", cursor: "zoom-in" }}>
+      <img src={src} alt={alt} style={{ width: "100%", height: "auto", maxHeight: "72vh", objectFit: "contain", objectPosition: "center top", display: "block", transform: activo ? "scale(2.2)" : "scale(1)", transformOrigin: `${pos.x}% ${pos.y}%`, transition: activo ? "none" : "transform 0.2s ease" }} />
+      {soportaHover.current && !activo && (
+        <span style={{ position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.55)", color: "#fff", fontSize: 11, fontWeight: 600, padding: "5px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 5, pointerEvents: "none" }}>🔍 Pasa el mouse para ver de cerca</span>
+      )}
+    </div>
+  );
+}
+
+/* ── META TAGS DINÁMICOS POR PRODUCTO (SEO/Google) ────── */
+function useMetaTagsProducto(prenda) {
+  useEffect(() => {
+    if (!prenda) return;
+    const selectores = ['meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:description"]', 'meta[property="og:url"]'];
+    const originales = selectores.map((sel) => document.querySelector(sel)?.getAttribute("content"));
+    const tituloOriginal = document.title;
+
+    const tallas = ORDEN_TALLAS.filter((t) => Number(prenda.stockPorTalla?.[t] || 0) > 0).join(", ");
+    const titulo = `${prenda.descripcion || prenda.codigo} | Curvy Vup`;
+    const descripcion = `${prenda.descripcion || prenda.categoria || "Ropa plus size"}${tallas ? ` · Tallas: ${tallas}` : ""} · Envíos a toda Colombia.`.slice(0, 160);
+
+    document.title = titulo;
+    selectores.forEach((sel) => document.querySelector(sel)?.setAttribute("content",
+      sel.includes("og:url") ? `https://curvyvup.web.app/producto/${prenda.id}` : sel.includes("title") ? titulo : descripcion));
+
+    return () => {
+      document.title = tituloOriginal;
+      selectores.forEach((sel, i) => { if (originales[i] != null) document.querySelector(sel)?.setAttribute("content", originales[i]); });
+    };
+  }, [prenda?.id]);
+}
+
 /* ── PÁGINA DE DETALLE DE PRODUCTO ──────────────────── */
 function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }) {
   const tallasDisp = ORDEN_TALLAS.filter((t) => Number(prenda?.stockPorTalla?.[t] || 0) > 0);
@@ -993,6 +1040,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
   const [tallaSel, setTallaSel] = useState(tallasDisp[0] || "");
   const [zoomAbierto, setZoomAbierto] = useState(false);
   const [guiaAbierta, setGuiaAbierta] = useState(false);
+  useMetaTagsProducto(prenda);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1030,7 +1078,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
           <div className="imagen-principal-container">
             <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: "#FAFAFA", boxShadow: "0 4px 24px rgba(139,26,77,0.08)" }}>
               {imagenes[indiceImg] ? (
-                <img src={imagenes[indiceImg]} onClick={() => setZoomAbierto(true)} style={{ width: "100%", height: "auto", maxHeight: "72vh", objectFit: "contain", objectPosition: "center top", cursor: "zoom-in", display: "block" }} />
+                <ImagenPrincipalZoom src={imagenes[indiceImg]} alt={prenda?.descripcion} onClick={() => setZoomAbierto(true)} />
               ) : <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>🪡</div>}
               {imagenes.length > 1 && (
                 <>
@@ -1171,6 +1219,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
             </>
           )}
           <button onClick={() => setZoomAbierto(false)} style={{ position: "absolute", top: 20, right: 20, background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%", width: 44, height: 44, color: "white", fontSize: 20, cursor: "pointer" }}>✕</button>
+          <div className="hint-pellizcar" style={{ position: "absolute", top: 20, left: 20, color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: 600, background: "rgba(255,255,255,0.1)", padding: "6px 12px", borderRadius: 20 }}>🤏 Pellizca para acercar</div>
           <div style={{ position: "absolute", bottom: 20, color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 600 }}>{indiceImg + 1} / {imagenes.length}</div>
         </div>
       )}
@@ -1184,6 +1233,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
           .miniaturas-horizontal { display: none !important; }
           .flecha-mobile { display: none !important; }
           .contador-mobile { display: none !important; }
+          .hint-pellizcar { display: none !important; }
         }
         @media (max-width: 1023px) {
           .detalle-layout { display: flex; flex-direction: column; gap: 0; }
@@ -1262,6 +1312,35 @@ export default function CatalogoPublico() {
   const [cantidadVisible, setCantidadVisible] = useState(12);
   const [cargandoMas, setCargandoMas] = useState(false);
   const pagRef = useRef({ hayMas: false, cargandoMas: false });
+
+  const abrirProducto = (p) => {
+    setDetalle(p);
+    window.history.pushState({}, "", `/producto/${p.id}`);
+  };
+  const cerrarProducto = () => {
+    setDetalle(null);
+    window.history.pushState({}, "", "/");
+  };
+
+  // Deep-link: si la URL ya trae /producto/:id (link compartido), abrir ese producto en cuanto cargue
+  useEffect(() => {
+    if (detalle || prendas.length === 0) return;
+    const m = window.location.pathname.match(/^\/producto\/([^/]+)$/);
+    if (m) {
+      const p = prendas.find((x) => x.id === m[1]);
+      if (p) setDetalle(p);
+    }
+  }, [prendas]);
+
+  // Sincroniza con el botón atrás/adelante del navegador
+  useEffect(() => {
+    const onPop = () => {
+      const m = window.location.pathname.match(/^\/producto\/([^/]+)$/);
+      setDetalle(m ? prendas.find((x) => x.id === m[1]) || null : null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [prendas]);
 
   useEffect(() => {
     getDocs(collection(db, "categorias")).then((snap) => {
@@ -1367,7 +1446,7 @@ export default function CatalogoPublico() {
     irACatalogo();
   };
 
-  if (detalle) return <DetalleProducto prenda={detalle} onVolver={() => setDetalle(null)} onCargarProducto={setDetalle} todasLasPrendas={prendas} />;
+  if (detalle) return <DetalleProducto prenda={detalle} onVolver={cerrarProducto} onCargarProducto={abrirProducto} todasLasPrendas={prendas} />;
   if (cargando) return <LoaderReloj />;
 
   return (
@@ -1382,11 +1461,11 @@ export default function CatalogoPublico() {
       {verCarrito && <CarritoDrawer carrito={carrito} setCarrito={setCarrito} onCerrar={() => setVerCarrito(false)} onEnviar={enviarWA} />}
 
       <Navbar cartCount={cantidadCarrito} onCartClick={() => setVerCarrito(true)} busqueda={busqueda} onBusqueda={(v) => { setBusqueda(v); if (v) setMostrarCatalogo(true); }}
-        prendas={prendas} onProductoClick={setDetalle} categoriasFS={categoriasFS} onFiltrarCategoria={filtrarDesdeNavbar} />
+        prendas={prendas} onProductoClick={abrirProducto} categoriasFS={categoriasFS} onFiltrarCategoria={filtrarDesdeNavbar} />
 
       <HeroCarousel slides={heroSlides} onVerCatalogo={irACatalogo} />
 
-      <SeccionCarrusel title="🌸 Lo Más Nuevo" subtitle="Prendas recién agregadas para ti" prendas={recientes} bg="#FAF7F4" onCardClick={setDetalle} onVerTodas={irACatalogo} />
+      <SeccionCarrusel title="🌸 Lo Más Nuevo" subtitle="Prendas recién agregadas para ti" prendas={recientes} bg="#FAF7F4" onCardClick={abrirProducto} onVerTodas={irACatalogo} />
 
       <SeccionCategorias prendas={prendas} categoriaSel={categoriaActiva} onSelect={(c) => { setCategoriaActiva(c); setTallasActivas([]); }} onVerCatalogo={irACatalogo} categoriasFS={categoriasFS} />
 
@@ -1405,7 +1484,7 @@ export default function CatalogoPublico() {
               <>
                 <div className="catalogo-grid">
                   {ordenadas.slice(0, cantidadVisible).map((p) => (
-                    <ProductoTarjetaGrid key={p.id} p={p} liked={liked.has(p.id)} onToggleLike={toggleLike} onClick={() => setDetalle(p)} />
+                    <ProductoTarjetaGrid key={p.id} p={p} liked={liked.has(p.id)} onToggleLike={toggleLike} onClick={() => abrirProducto(p)} />
                   ))}
                 </div>
                 {cargandoMas && (
@@ -1423,9 +1502,9 @@ export default function CatalogoPublico() {
         </div>
       )}
 
-      <SeccionMasPedidas prendas={masPedidas} onCardClick={setDetalle} />
+      <SeccionMasPedidas prendas={masPedidas} onCardClick={abrirProducto} />
       <SeccionCTA onVerCatalogo={irACatalogo} />
-      <SeccionCarrusel title="Ofertas de la Semana 🔥" prendas={enOfertas} bg="#FAF7F4" onCardClick={setDetalle} onVerTodas={irACatalogo} />
+      <SeccionCarrusel title="Ofertas de la Semana 🔥" prendas={enOfertas} bg="#FAF7F4" onCardClick={abrirProducto} onVerTodas={irACatalogo} />
       <SeccionInstagram fotos={paraInstagram} />
       <Footer />
       <BotonWhatsappFlotante />
