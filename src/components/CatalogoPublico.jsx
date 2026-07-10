@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { db } from "../firebase";
 import { collection, getDocs, addDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
-import { fmt, Icon, nombreDe } from "../utils.jsx";
+import { fmt, Icon, nombreDe, ofertaVigente, precioEfectivo } from "../utils.jsx";
 
 const NUMERO_WA = "573017886206";
 const ORDEN_TALLAS = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
@@ -15,6 +15,17 @@ const TICKER_MENSAJES = ["🌸 Nueva colección disponible", "💕 Envíos a tod
 const tieneImagen = (p) => !!(p.imagenes?.[0]?.trim() || p.imagen?.trim());
 const fechaCreacion = (p) => (p.creadoEn?.toDate ? p.creadoEn.toDate() : new Date(p.fechaIngreso || p.creadoEn || 0));
 const waLink = (texto) => `https://api.whatsapp.com/send?phone=${NUMERO_WA}&text=${encodeURIComponent(texto)}`;
+
+/* ── PRECIO CON OFERTA (tachado + precio de oferta) ───── */
+function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, color = "#8B1A4D", ofertaColor = "#C2185B", tachadoColor = "#999" }) {
+  if (!ofertaVigente(p)) return <span style={{ fontSize, fontWeight, color }}>{fmt(p.precioVenta)}</span>;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <span style={{ fontSize: fontSize * 0.7, fontWeight: 500, color: tachadoColor, textDecoration: "line-through" }}>{fmt(p.precioVenta)}</span>
+      <span style={{ fontSize, fontWeight, color: ofertaColor }}>{fmt(p.precioOferta)}</span>
+    </span>
+  );
+}
 
 /* ── ICONOS ─────────────────────────────────────────── */
 const CartIcon = ({ size = 20 }) => (
@@ -424,7 +435,7 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
                 </div>
                 <div style={{ padding: "10px 12px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
                   <p style={{ fontSize: 12, fontWeight: 700, color: "#1C0F17", margin: "0 0 4px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3, flex: 1 }}>{nombreDe(p)}</p>
-                  <p style={{ fontSize: 15, fontWeight: 800, color: "#8B1A4D", margin: "0 0 8px" }}>{fmt(p.precioVenta)}</p>
+                  <p style={{ margin: "0 0 8px" }}><PrecioConOferta p={p} fontSize={15} color="#8B1A4D" /></p>
                   <button onClick={(e) => { e.stopPropagation(); onCardClick(p); }} style={{ width: "100%", padding: "7px 0", borderRadius: 12, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Ver prenda →</button>
                 </div>
               </div>
@@ -511,7 +522,7 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(139,26,77,0.88) 0%, rgba(139,26,77,0.15) 55%, transparent 100%)" }} />
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px", zIndex: 2 }}>
                   <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
-                  <p style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 800, color: "#fff" }}>{fmt(p.precioVenta)}</p>
+                  <p style={{ margin: "0 0 12px" }}><PrecioConOferta p={p} fontSize={18} color="#fff" tachadoColor="rgba(255,255,255,0.65)" /></p>
                   <button onClick={(e) => { e.stopPropagation(); abrirWhatsappProducto(p); }} style={{ width: "100%", padding: "10px 0", borderRadius: 14, background: "#fff", color: "#8B1A4D", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Pedir 💕</button>
                 </div>
               </div>
@@ -637,7 +648,8 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
           : <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <span style={{ fontSize: 32 }}>🪡</span><span style={{ fontSize: 11, color: "#C2185B", fontWeight: 500 }}>Foto próximamente</span>
             </div>}
-        {ultimaUnidad ? <span style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>⚠️ ÚLTIMA</span>
+        {ofertaVigente(p) ? <span style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>🏷️ OFERTA</span>
+          : ultimaUnidad ? <span style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>⚠️ ÚLTIMA</span>
           : esNueva ? <span style={{ position: "absolute", top: 10, left: 10, background: "#FCE4EC", color: "#C2185B", border: "1px solid #C2185B", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>🌸 NUEVO</span> : null}
         <button onClick={(e) => { e.stopPropagation(); onToggleLike(p.id); }}
           style={{ position: "absolute", top: 10, right: 10, width: 32, height: 32, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15 }}>
@@ -647,7 +659,7 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
       <div style={{ padding: "10px 12px 14px" }}>
         <span style={{ fontSize: 10, color: "#999", textTransform: "uppercase", letterSpacing: 1, fontWeight: 500 }}>{p.categoria}</span>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 34 }}>{nombreDe(p)}</p>
-        <p style={{ fontSize: 17, fontWeight: 800, color: "#C2185B", margin: "0 0 10px" }}>{fmt(p.precioVenta)}</p>
+        <p style={{ margin: "0 0 10px" }}><PrecioConOferta p={p} fontSize={17} color="#C2185B" /></p>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {tallasDisp.length > 0 ? (
             <select value={tallaSel} onChange={(e) => { e.stopPropagation(); setTallaSel(e.target.value); }} onClick={(e) => e.stopPropagation()}
@@ -1119,7 +1131,8 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
             <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.25, margin: "0 0 20px" }}>{nombreDe(prenda)}</h1>
             <div style={{ paddingBottom: 20, marginBottom: 20, borderBottom: "1px solid #F5E6EE" }}>
               <span style={{ fontSize: 13, color: "#888", fontWeight: 600, marginRight: 8 }}>Precio:</span>
-              <span style={{ fontSize: 30, fontWeight: 900, color: "#C2185B" }}>{fmt(prenda.precioVenta)}</span>
+              <PrecioConOferta p={prenda} fontSize={30} fontWeight={900} color="#C2185B" />
+              {ofertaVigente(prenda) && <span style={{ marginLeft: 10, background: "#C2185B", color: "#fff", fontSize: 10, fontWeight: 800, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>🏷️ OFERTA</span>}
             </div>
 
             {tallasDisp.length > 0 && (
@@ -1195,8 +1208,9 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                 return (
                   <div key={p.id} onClick={() => { onCargarProducto?.(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="tarjeta-hover"
                     style={{ background: "white", borderRadius: 16, overflow: "hidden", cursor: "pointer", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", position: "relative" }}>
-                    {i === 0 && <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🔥 POPULAR</div>}
-                    {i === 1 && <div style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div>}
+                    {ofertaVigente(p) ? <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🏷️ OFERTA</div>
+                      : i === 0 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🔥 POPULAR</div>
+                      : i === 1 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div> : null}
                     {s <= 2 && s > 0 && <div style={{ position: "absolute", top: 10, left: i < 2 ? "auto" : 10, right: i < 2 ? 10 : "auto", background: "#FCE4EC", color: "#C2185B", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 20, zIndex: 1, border: "1px solid #F48FB1" }}>⚠️ ÚLTIMA</div>}
                     <div style={{ position: "relative", paddingTop: "120%", overflow: "hidden", background: "#FAFAFA" }}>
                       {img && <img src={img} alt={nombreDe(p)} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />}
@@ -1205,7 +1219,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                       <span style={{ fontSize: 10, color: "#C2185B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.8px" }}>{p.categoria}</span>
                       <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, minHeight: 32 }}>{nombreDe(p)}</p>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: "#C2185B" }}>{fmt(p.precioVenta)}</span>
+                        <PrecioConOferta p={p} fontSize={15} color="#C2185B" />
                         <span style={{ fontSize: 10, color: "#999" }}>Ver →</span>
                       </div>
                     </div>
@@ -1397,7 +1411,10 @@ export default function CatalogoPublico() {
 
   const filtradas = useMemo(() => prendas.filter((p) => {
     if (!tieneImagen(p)) return false;
-    const coincideCat = categoriaActiva === "todas" ? true : categoriaActiva === "otras" ? !CATEGORIAS_BASE.includes(p.categoria) : p.categoria?.toLowerCase() === categoriaActiva.toLowerCase();
+    const coincideCat = categoriaActiva === "todas" ? true
+      : categoriaActiva === "ofertas" ? ofertaVigente(p)
+      : categoriaActiva === "otras" ? !CATEGORIAS_BASE.includes(p.categoria)
+      : p.categoria?.toLowerCase() === categoriaActiva.toLowerCase();
     const coincideBusq = (nombreDe(p) || "").toLowerCase().includes(busqueda.toLowerCase());
     const coincideTalla = tallasActivas.length === 0 || tallasActivas.some((t) => p.stockPorTalla ? (Number(p.stockPorTalla[t]) || 0) > 0 : p.talla === t);
     return coincideCat && coincideTalla && coincideBusq;
@@ -1421,7 +1438,7 @@ export default function CatalogoPublico() {
     setCarrito((prev) => {
       const existe = prev.find((i) => i.id === prenda.id && i.talla === talla);
       if (existe) return prev.map((i) => (i.id === prenda.id && i.talla === talla ? { ...i, cantidad: i.cantidad + 1 } : i));
-      return [...prev, { id: prenda.id, descripcion: nombreDe(prenda), precio: Number(prenda.precioVenta), talla, cantidad: 1, imagen: prenda.imagenes?.[0] || prenda.imagen }];
+      return [...prev, { id: prenda.id, descripcion: nombreDe(prenda), precio: precioEfectivo(prenda), talla, cantidad: 1, imagen: prenda.imagenes?.[0] || prenda.imagen }];
     });
     setVerCarrito(true);
   };
@@ -1446,7 +1463,7 @@ export default function CatalogoPublico() {
 
   const filtrarDesdeNavbar = (cat) => {
     if (cat === "todas") { setCategoriaActiva("todas"); setOrdenActivo("recientes"); }
-    else if (cat === "ofertas") { setCategoriaActiva("todas"); setOrdenActivo("menor"); }
+    else if (cat === "ofertas") { setCategoriaActiva("ofertas"); setOrdenActivo("recientes"); }
     else { setCategoriaActiva(cat); setOrdenActivo("recientes"); }
     setTallasActivas([]);
     irACatalogo();

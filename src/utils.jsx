@@ -18,6 +18,16 @@ export const parseNum = (str) => String(str).replace(/\D/g, "");
 // Nombre corto a mostrar; cae al campo viejo "descripcion" en productos no migrados.
 export const nombreDe = (p) => p?.nombre || p?.descripcion || "";
 
+// Oferta vigente = activa, con precio de oferta, y sin fecha de vencimiento pasada.
+export const ofertaVigente = (p) => {
+  if (!p?.ofertaActiva || !p?.precioOferta) return false;
+  if (p.ofertaHasta && new Date(p.ofertaHasta) < new Date()) return false;
+  return true;
+};
+
+// Precio real a cobrar/mostrar: el de oferta si está vigente, si no el normal.
+export const precioEfectivo = (p) => Number(ofertaVigente(p) ? p.precioOferta : p?.precioVenta) || 0;
+
 export const hoyObj = new Date();
 export const esHoy = (fechaISO) => {
   if (!fechaISO) return false;

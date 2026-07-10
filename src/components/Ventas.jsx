@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { fmt, fmtNum, parseNum, Icon, Badge, fmtFecha, nombreDe } from "../utils.jsx";
+import { fmt, fmtNum, parseNum, Icon, Badge, fmtFecha, nombreDe, ofertaVigente, precioEfectivo } from "../utils.jsx";
 import FacturaPDF from "./FacturaPDF.jsx";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -91,7 +91,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
     setCodigoSel(codigo);
     setTallaSel("");
     const p = prendas.find(pr => pr.codigo === codigo);
-    if (p) setPrecioFinal(String(p.precioVenta));
+    if (p) setPrecioFinal(String(precioEfectivo(p)));
   };
 
   const agregarAlCarrito = () => {
@@ -462,7 +462,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 12, fontWeight: 700, color: "var(--dark)", margin: "0 0 1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nombreDe(p)}</p>
                             <p style={{ fontSize: 10, color: "var(--mid)", margin: "0 0 8px" }}>
-                              {p.codigo}{p.sku ? ` · SKU: ${p.sku}` : ""} · {fmt(p.precioVenta)}
+                              {p.codigo}{p.sku ? ` · SKU: ${p.sku}` : ""} · {fmt(precioEfectivo(p))}{ofertaVigente(p) ? " 🏷️" : ""}
                             </p>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                               {tallasDisp.length === 0 && <span style={{ fontSize: 11, color: "var(--danger)" }}>Sin stock por talla</span>}
@@ -485,7 +485,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
               {prendaSel && (
                 <div style={{ background: "#F0FFF4", border: "1.5px solid var(--success)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--dark)", margin: 0 }}>{nombreDe(prendaSel)}</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--dark)", margin: 0 }}>{nombreDe(prendaSel)}{ofertaVigente(prendaSel) && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, color: "#fff", background: "#C2185B", padding: "2px 7px", borderRadius: 10 }}>🏷️ OFERTA</span>}</p>
                     <p style={{ fontSize: 11, color: "var(--success)", margin: "3px 0 0", fontWeight: 600 }}>
                       {tallaSel ? `Talla ${tallaSel} · ${prendaSel.stockPorTalla?.[tallaSel] ?? prendaSel.stock} disponibles` : "Selecciona talla"}
                     </p>

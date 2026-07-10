@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { fmt, fmtNum, parseNum, comprimirImagen, Icon, fmtFecha, nombreDe } from "../utils.jsx";
+import { fmt, fmtNum, parseNum, comprimirImagen, Icon, fmtFecha, nombreDe, ofertaVigente } from "../utils.jsx";
 import ImportarFactura from "./ImportarFactura.jsx";
 import ColaBorradores from "./ColaBorradores.jsx";
 
@@ -26,6 +26,7 @@ export default function Inventario({ prendas, setPrendas }) {
   const formBase = {
     codigo: "", descripcion: "", nombre: "", caracteristicas: [], sku: "", stockMinimo: "1",
     costoCompra: "", precioVenta: "", categoria: "Blusa", imagen: "", imagenes: [],
+    ofertaActiva: false, precioOferta: "", ofertaHasta: "",
     tallas: { "XS": "", "S": "", "M": "", "L": "", "XL": "", "0XL": "", "1XL": "", "2XL": "", "3XL": "", "4XL": "", "5XL": "" }
   };
   const [form, setForm] = useState(formBase);
@@ -103,7 +104,7 @@ export default function Inventario({ prendas, setPrendas }) {
     const nuevasImagenes = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.size > 2 * 1024 * 1024) { showToast("⚠️ Una imagen supera los 2MB, fue omitida.", "warn"); continue; }
+      if (file.size > 20 * 1024 * 1024) { showToast("⚠️ Una imagen supera los 20MB, fue omitida.", "warn"); continue; }
       setOptimizando(`Optimizando foto ${i + 1} de ${files.length}...`);
       try { nuevasImagenes.push(await comprimirImagen(file, 900)); }
       catch { showToast("Error procesando imagen", "danger"); }
@@ -143,6 +144,8 @@ export default function Inventario({ prendas, setPrendas }) {
 
   const guardar = async () => {
     if (!form.nombre || !form.precioVenta || !form.costoCompra) return showToast("⚠️ Llena todos los campos clave", "warn");
+    if (form.ofertaActiva && !form.precioOferta) return showToast("⚠️ Ingresa el precio de oferta o apaga el switch", "warn");
+    if (form.ofertaActiva && Number(form.precioOferta) >= Number(form.precioVenta)) return showToast("⚠️ El precio de oferta debe ser menor al precio normal", "warn");
 
     const stockPorTallaObj = {};
     let totalStockForm = 0;
@@ -174,6 +177,9 @@ export default function Inventario({ prendas, setPrendas }) {
       costoCompra: cNum,
       precioVenta: pNum,
       porcentajeGanancia: porcGananciaFinal,
+      ofertaActiva: !!form.ofertaActiva,
+      precioOferta: form.precioOferta ? Number(form.precioOferta) : null,
+      ofertaHasta: form.ofertaHasta || null,
       categoria: form.categoria,
       imagen: form.imagenes.length > 0 ? form.imagenes[0] : "",
       imagenes: form.imagenes,
@@ -226,6 +232,7 @@ export default function Inventario({ prendas, setPrendas }) {
       nombre: p.nombre || p.descripcion || "",
       descripcion: migrado ? (p.descripcion || "") : "",
       caracteristicas: Array.isArray(p.caracteristicas) ? p.caracteristicas : [],
+      ofertaActiva: !!p.ofertaActiva, precioOferta: p.precioOferta ? String(p.precioOferta) : "", ofertaHasta: p.ofertaHasta || "",
       stockMinimo: String(p.stockMinimo || 1), costoCompra: String(p.costoCompra), precioVenta: String(p.precioVenta), tallas: tallasForm, imagenes: imgsRecuperadas
     });
     setEditandoId(p.id); setMostrarForm(true); window.scrollTo(0, 0);
@@ -584,6 +591,28 @@ export default function Inventario({ prendas, setPrendas }) {
                   <p style={{ margin: 0, fontSize: 10, color: "var(--mid)" }}>Neto: {fmt(gananciaDinero)}</p>
                 </div>
               </div>
+
+              <div style={{ width: "100%", background: "white", padding: "12px", borderRadius: 10, border: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--dark)" }}>🏷️ Oferta activa</span>
+                  <button type="button" onClick={() => setForm({ ...form, ofertaActiva: !form.ofertaActiva })}
+                    style={{ width: 40, height: 24, borderRadius: 12, background: form.ofertaActiva ? "#8B1A4D" : "#D1C4CA", border: "none", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+                    <span style={{ position: "absolute", top: 2, left: form.ofertaActiva ? 18 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.18)" }} />
+                  </button>
+                </div>
+                {form.ofertaActiva && (
+                  <div className="grid-precios" style={{ marginTop: 12 }}>
+                    <div style={{ width: "100%" }}>
+                      <label style={{ fontSize: 11, color: "var(--mid)", paddingLeft: 4 }}>Precio de oferta ($)</label>
+                      <input type="text" value={form.precioOferta ? fmtNum(form.precioOferta) : ""} style={{ width: "100%" }} onChange={e => setForm({ ...form, precioOferta: parseNum(e.target.value) })} />
+                    </div>
+                    <div style={{ width: "100%" }}>
+                      <label style={{ fontSize: 11, color: "var(--mid)", paddingLeft: 4 }}>Vence el <span style={{ fontWeight: 400 }}>(opcional)</span></label>
+                      <input type="date" value={form.ofertaHasta} style={{ width: "100%" }} onChange={e => setForm({ ...form, ofertaHasta: e.target.value })} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -651,12 +680,14 @@ export default function Inventario({ prendas, setPrendas }) {
                   )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", margin: "0 0 3px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>{nombreDe(p)}{!p.nombre && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--warn)", background: "#FFF3E0", padding: "2px 7px", borderRadius: 10, whiteSpace: "nowrap" }}>Falta migrar</span>}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", margin: "0 0 3px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>{nombreDe(p)}{!p.nombre && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--warn)", background: "#FFF3E0", padding: "2px 7px", borderRadius: 10, whiteSpace: "nowrap" }}>Falta migrar</span>}{ofertaVigente(p) && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "#fff", background: "#8B1A4D", padding: "2px 7px", borderRadius: 10, whiteSpace: "nowrap" }}>🏷️ OFERTA</span>}</p>
                   <p style={{ fontSize: 11, color: "var(--mid)", margin: "0 0 2px 0" }}>{p.categoria} · {p.codigo}</p>
                   {p.sku && (
                     <p style={{ fontSize: 10, color: "var(--mid)", margin: "0 0 4px 0", fontFamily: "monospace", background: "var(--creme)", display: "inline-block", padding: "1px 7px", borderRadius: 4 }}>SKU: {p.sku}</p>
                   )}
-                  <p style={{ fontSize: 18, fontWeight: 800, color: "var(--rosa-deep)", margin: 0 }}>{fmt(p.precioVenta)}</p>
+                  <p style={{ fontSize: 18, fontWeight: 800, color: "var(--rosa-deep)", margin: 0 }}>
+                    {ofertaVigente(p) ? <><span style={{ fontSize: 13, fontWeight: 500, color: "var(--mid)", textDecoration: "line-through", marginRight: 6 }}>{fmt(p.precioVenta)}</span>{fmt(p.precioOferta)}</> : fmt(p.precioVenta)}
+                  </p>
                 </div>
               </div>
 
