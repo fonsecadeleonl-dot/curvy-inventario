@@ -72,7 +72,7 @@ export default function ColaBorradores({ setPrendas, onCerrar }) {
       } else {
         // --- NUEVO: crear prenda ---
         if (!b.descripcion || !b.precioVenta || !b.categoria) {
-          alert("Completa descripción, categoría y precio de venta.");
+          alert("Completa nombre, categoría y precio de venta.");
           setGuardando(null);
           return;
         }
@@ -89,7 +89,7 @@ export default function ColaBorradores({ setPrendas, onCerrar }) {
         const nuevaPrenda = {
           codigo:       b.referencia || `REF-${Date.now()}`,
           sku:          (b.sku || "").trim(),
-          descripcion:  b.descripcion,
+          nombre:       (b.descripcion || "").trim(),
           categoria:    b.categoria,
           costoCompra:  Number(b.costoUnitario) || 0,
           precioVenta:  Number(b.precioVenta)   || 0,

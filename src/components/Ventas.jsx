@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { fmt, fmtNum, parseNum, Icon, Badge, fmtFecha } from "../utils.jsx";
+import { fmt, fmtNum, parseNum, Icon, Badge, fmtFecha, nombreDe } from "../utils.jsx";
 import FacturaPDF from "./FacturaPDF.jsx";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -104,7 +104,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
     if (yaEnCarrito) {
       setCarrito(carrito.map(item => item.id === prendaSel.id && item.tallaSel === tallaSel ? { ...item, cantidad: cantTotal } : item));
     } else {
-      setCarrito([...carrito, { ...prendaSel, cantidad, precioFinal: Number(precioFinal), tallaSel }]);
+      setCarrito([...carrito, { ...prendaSel, descripcion: nombreDe(prendaSel), cantidad, precioFinal: Number(precioFinal), tallaSel }]);
     }
     setCodigoSel(""); setCantidad(1); setPrecioFinal(""); setTallaSel(""); setBusquedaProducto("");
   };
@@ -189,7 +189,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
     try {
       const prendasMut = [...prendas];
       for (const item of facturaAEliminar.items) {
-        const p = prendasMut.find(pr => pr.codigo === item.codigo || pr.descripcion === item.descripcion);
+        const p = prendasMut.find(pr => pr.codigo === item.codigo || nombreDe(pr) === item.descripcion);
         if (!p || !item.cantidad) continue;
         const nuevoSPT = { ...(p.stockPorTalla || {}) };
         if (item.talla && nuevoSPT[item.talla] !== undefined) {
@@ -218,7 +218,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
     if (!itemAEliminar) return;
     const { factura, index, item } = itemAEliminar;
     try {
-      const p = prendas.find(pr => pr.codigo === item.codigo || pr.descripcion === item.descripcion);
+      const p = prendas.find(pr => pr.codigo === item.codigo || nombreDe(pr) === item.descripcion);
       if (p) {
         const nuevoSPT = { ...(p.stockPorTalla || {}) };
         if (item.talla && nuevoSPT[item.talla] !== undefined) {
@@ -442,7 +442,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
                 const q = busquedaProducto.toLowerCase();
                 const resultados = prendas.filter(p =>
                   Number(p.stock) > 0 && (
-                    (p.descripcion || "").toLowerCase().includes(q) ||
+                    (nombreDe(p) || "").toLowerCase().includes(q) ||
                     (p.codigo || "").toLowerCase().includes(q) ||
                     (p.sku || "").toLowerCase().includes(q) ||
                     (p.categoria || "").toLowerCase().includes(q)
@@ -460,14 +460,14 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
                             {imgSrc ? <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Icon name="image" size={18} color="var(--rosa-deep)" />}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontSize: 12, fontWeight: 700, color: "var(--dark)", margin: "0 0 1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.descripcion}</p>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: "var(--dark)", margin: "0 0 1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nombreDe(p)}</p>
                             <p style={{ fontSize: 10, color: "var(--mid)", margin: "0 0 8px" }}>
                               {p.codigo}{p.sku ? ` · SKU: ${p.sku}` : ""} · {fmt(p.precioVenta)}
                             </p>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                               {tallasDisp.length === 0 && <span style={{ fontSize: 11, color: "var(--danger)" }}>Sin stock por talla</span>}
                               {tallasDisp.map(t => (
-                                <button key={t} onClick={() => { handleSelectPrenda(p.codigo); setTallaSel(t); setBusquedaProducto(p.descripcion); }}
+                                <button key={t} onClick={() => { handleSelectPrenda(p.codigo); setTallaSel(t); setBusquedaProducto(nombreDe(p)); }}
                                   style={{ background: "var(--rosa-deep)", color: "white", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                                   {t} <span style={{ opacity: 0.75, fontWeight: 400 }}>({p.stockPorTalla[t]})</span>
                                 </button>
@@ -485,7 +485,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
               {prendaSel && (
                 <div style={{ background: "#F0FFF4", border: "1.5px solid var(--success)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--dark)", margin: 0 }}>{prendaSel.descripcion}</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--dark)", margin: 0 }}>{nombreDe(prendaSel)}</p>
                     <p style={{ fontSize: 11, color: "var(--success)", margin: "3px 0 0", fontWeight: 600 }}>
                       {tallaSel ? `Talla ${tallaSel} · ${prendaSel.stockPorTalla?.[tallaSel] ?? prendaSel.stock} disponibles` : "Selecciona talla"}
                     </p>

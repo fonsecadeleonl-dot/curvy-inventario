@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { fmt, fmtNum, parseNum, comprimirImagen, Icon, fmtFecha } from "../utils.jsx";
+import { fmt, fmtNum, parseNum, comprimirImagen, Icon, fmtFecha, nombreDe } from "../utils.jsx";
 import ImportarFactura from "./ImportarFactura.jsx";
 import ColaBorradores from "./ColaBorradores.jsx";
 
@@ -21,9 +21,10 @@ export default function Inventario({ prendas, setPrendas }) {
   const [guardandoAjuste, setGuardandoAjuste] = useState(false);
   const [historialAbierto, setHistorialAbierto] = useState(null);
   const [optimizando, setOptimizando] = useState(null);
+  const [nuevaCaracteristica, setNuevaCaracteristica] = useState("");
 
   const formBase = {
-    codigo: "", descripcion: "", sku: "", stockMinimo: "1",
+    codigo: "", descripcion: "", nombre: "", caracteristicas: [], sku: "", stockMinimo: "1",
     costoCompra: "", precioVenta: "", categoria: "Blusa", imagen: "", imagenes: [],
     tallas: { "XS": "", "S": "", "M": "", "L": "", "XL": "", "0XL": "", "1XL": "", "2XL": "", "3XL": "", "4XL": "", "5XL": "" }
   };
@@ -39,7 +40,7 @@ export default function Inventario({ prendas, setPrendas }) {
     let result = prendas.filter(p => {
       const q = busqueda.toLowerCase();
       const coincideTexto = !q
-        || (p.descripcion || "").toLowerCase().includes(q)
+        || nombreDe(p).toLowerCase().includes(q)
         || (p.codigo || "").toLowerCase().includes(q)
         || (p.sku || "").toLowerCase().includes(q)
         || (p.categoria || "").toLowerCase().includes(q);
@@ -117,6 +118,17 @@ export default function Inventario({ prendas, setPrendas }) {
     setForm({ ...form, imagenes: nuevas });
   };
 
+  const agregarCaracteristica = () => {
+    const texto = nuevaCaracteristica.trim();
+    if (!texto) return;
+    setForm({ ...form, caracteristicas: [...(form.caracteristicas || []), texto] });
+    setNuevaCaracteristica("");
+  };
+
+  const quitarCaracteristica = (index) => {
+    setForm({ ...form, caracteristicas: form.caracteristicas.filter((_, i) => i !== index) });
+  };
+
   const generarCodigo = (categoria) => {
     const prefijo = categoria.substring(0, 3).toUpperCase();
     let maxNum = 0;
@@ -130,7 +142,7 @@ export default function Inventario({ prendas, setPrendas }) {
   };
 
   const guardar = async () => {
-    if (!form.descripcion || !form.precioVenta || !form.costoCompra) return showToast("⚠️ Llena todos los campos clave", "warn");
+    if (!form.nombre || !form.precioVenta || !form.costoCompra) return showToast("⚠️ Llena todos los campos clave", "warn");
 
     const stockPorTallaObj = {};
     let totalStockForm = 0;
@@ -153,7 +165,9 @@ export default function Inventario({ prendas, setPrendas }) {
     const datosGuardar = {
       codigo: codigoFinal,
       sku: (form.sku || "").trim(),
-      descripcion: form.descripcion,
+      nombre: form.nombre.trim(),
+      caracteristicas: (form.caracteristicas || []).filter(Boolean),
+      descripcion: (form.descripcion || "").trim(),
       stockPorTalla: stockPorTallaObj,
       stock: totalStockForm,
       stockMinimo: Number(form.stockMinimo) || 1,
@@ -206,7 +220,14 @@ export default function Inventario({ prendas, setPrendas }) {
       tallasForm[p.talla] = String(p.stock);
     }
     const imgsRecuperadas = p.imagenes ? [...p.imagenes] : (p.imagen ? [p.imagen] : []);
-    setForm({ ...p, stockMinimo: String(p.stockMinimo || 1), costoCompra: String(p.costoCompra), precioVenta: String(p.precioVenta), tallas: tallasForm, imagenes: imgsRecuperadas });
+    const migrado = !!p.nombre;
+    setForm({
+      ...p,
+      nombre: p.nombre || p.descripcion || "",
+      descripcion: migrado ? (p.descripcion || "") : "",
+      caracteristicas: Array.isArray(p.caracteristicas) ? p.caracteristicas : [],
+      stockMinimo: String(p.stockMinimo || 1), costoCompra: String(p.costoCompra), precioVenta: String(p.precioVenta), tallas: tallasForm, imagenes: imgsRecuperadas
+    });
     setEditandoId(p.id); setMostrarForm(true); window.scrollTo(0, 0);
   };
 
@@ -218,7 +239,9 @@ export default function Inventario({ prendas, setPrendas }) {
     const imgsRecuperadas = p.imagenes ? [...p.imagenes] : (p.imagen ? [p.imagen] : []);
     setForm({
       ...formBase,
-      descripcion: p.descripcion + " (copia)",
+      nombre: nombreDe(p) + " (copia)",
+      descripcion: p.nombre ? (p.descripcion || "") : "",
+      caracteristicas: Array.isArray(p.caracteristicas) ? [...p.caracteristicas] : [],
       sku: p.sku || "",
       categoria: p.categoria || "Blusa",
       costoCompra: String(p.costoCompra),
@@ -337,7 +360,7 @@ export default function Inventario({ prendas, setPrendas }) {
                 : <div style={{ background: "#FFEBEE", width: 60, height: 60, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: "var(--danger)" }}><Icon name="trash" size={28} /></div>;
             })()}
             <h3 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", color: "var(--dark)", marginBottom: 8 }}>¿Eliminar Prenda?</h3>
-            <p style={{ fontSize: 13, color: "var(--dark)", fontWeight: 700, marginBottom: 4 }}>{prendaAEliminar.descripcion}</p>
+            <p style={{ fontSize: 13, color: "var(--dark)", fontWeight: 700, marginBottom: 4 }}>{nombreDe(prendaAEliminar)}</p>
             <p style={{ fontSize: 12, color: "var(--mid)", marginBottom: 24 }}>{prendaAEliminar.codigo} · {Number(prendaAEliminar.stock)} uds en stock</p>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setPrendaAEliminar(null)} style={{ flex: 1, background: "var(--border)", color: "var(--dark)", border: "none", padding: "12px", borderRadius: 12, fontWeight: 600 }}>Cancelar</button>
@@ -354,7 +377,7 @@ export default function Inventario({ prendas, setPrendas }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
               <div>
                 <p style={{ fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 700, color: "var(--dark)", margin: 0 }}>Ajuste rápido de stock</p>
-                <p style={{ fontSize: 12, color: "var(--mid)", margin: 0 }}>{ajusteRapido.prenda.descripcion}</p>
+                <p style={{ fontSize: 12, color: "var(--mid)", margin: 0 }}>{nombreDe(ajusteRapido.prenda)}</p>
               </div>
               <button onClick={() => setAjusteRapido(null)} style={{ background: "var(--creme)", border: "none", borderRadius: 50, width: 34, height: 34, fontSize: 20, cursor: "pointer", color: "var(--mid)" }}>×</button>
             </div>
@@ -473,15 +496,44 @@ export default function Inventario({ prendas, setPrendas }) {
 
             <div style={{ width: "100%" }}>
               <label style={{ fontSize: 11, color: "var(--mid)", paddingLeft: 4 }}>
-                Nombre de la Prenda
+                Nombre corto
                 <span style={{ fontWeight: 400 }}> (título que verán tus clientas)</span>
+                <span style={{ fontWeight: 400, color: (form.nombre || "").length > 40 ? "var(--danger)" : "var(--mid)" }}> — {(form.nombre || "").length}/40</span>
               </label>
-              <input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} style={{ width: "100%" }} placeholder="Ej: Blusa floral manga corta con encaje" />
+              <input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} style={{ width: "100%" }} placeholder="Ej: Blusa Auralis" />
               <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {["Blusa + color + detalle", "Vestido + estilo + ocasión", "Conjunto + material + corte", "Falda + largo + estampado"].map(tip => (
                   <span key={tip} style={{ fontSize: 10, color: "var(--rosa-deep)", background: "var(--rosa-pale)", padding: "2px 8px", borderRadius: 10 }}>💡 {tip}</span>
                 ))}
               </div>
+            </div>
+
+            <div style={{ width: "100%" }}>
+              <label style={{ fontSize: 11, color: "var(--mid)", paddingLeft: 4 }}>
+                Características destacadas
+                <span style={{ fontWeight: 400 }}> (una por línea, se muestran como bullets)</span>
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input value={nuevaCaracteristica} onChange={e => setNuevaCaracteristica(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); agregarCaracteristica(); } }}
+                  style={{ width: "100%" }} placeholder="Ej: Cuello en V profundo" />
+                <button type="button" onClick={agregarCaracteristica} style={{ flexShrink: 0, background: "var(--rosa-pale)", color: "var(--rosa-deep)", border: "none", borderRadius: 10, padding: "0 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Agregar</button>
+              </div>
+              {form.caracteristicas?.length > 0 && (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {form.caracteristicas.map((c, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--creme)", borderRadius: 10, padding: "6px 10px" }}>
+                      <span style={{ flex: 1, fontSize: 13, color: "var(--dark)" }}>{c}</span>
+                      <button type="button" onClick={() => quitarCaracteristica(i)} style={{ background: "none", border: "none", color: "var(--mid)", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ width: "100%" }}>
+              <label style={{ fontSize: 11, color: "var(--mid)", paddingLeft: 4 }}>Descripción corta <span style={{ fontWeight: 400 }}>(opcional)</span></label>
+              <textarea value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} rows={3} style={{ width: "100%", resize: "vertical" }} placeholder="Ej: Ideal para el día a día, tela fresca y liviana." />
             </div>
 
             <div style={{ width: "100%" }}>
@@ -599,7 +651,7 @@ export default function Inventario({ prendas, setPrendas }) {
                   )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", margin: "0 0 3px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>{p.descripcion}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", margin: "0 0 3px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>{nombreDe(p)}{!p.nombre && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "var(--warn)", background: "#FFF3E0", padding: "2px 7px", borderRadius: 10, whiteSpace: "nowrap" }}>Falta migrar</span>}</p>
                   <p style={{ fontSize: 11, color: "var(--mid)", margin: "0 0 2px 0" }}>{p.categoria} · {p.codigo}</p>
                   {p.sku && (
                     <p style={{ fontSize: 10, color: "var(--mid)", margin: "0 0 4px 0", fontFamily: "monospace", background: "var(--creme)", display: "inline-block", padding: "1px 7px", borderRadius: 4 }}>SKU: {p.sku}</p>

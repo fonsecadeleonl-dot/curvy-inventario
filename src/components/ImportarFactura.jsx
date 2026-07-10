@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { nombreDe } from "../utils.jsx";
 
 const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
@@ -149,7 +150,7 @@ export default function ImportarFactura({ onBorradorCreado, onClose }) {
             estado: "pendiente",
             tipo: "restock",
             prendaExistenteId:     prendaExistente.id,
-            prendaExistenteNombre: prendaExistente.descripcion,
+            prendaExistenteNombre: nombreDe(prendaExistente),
             stockActualPorTalla:   prendaExistente.stockPorTalla || {},
             categoria:             prendaExistente.categoria || "Blusa",
             precioVenta:           prendaExistente.precioVenta || "",

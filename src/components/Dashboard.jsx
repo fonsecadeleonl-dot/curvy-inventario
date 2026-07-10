@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { fmt, fmtNum, StatCard, Icon } from "../utils.jsx";
+import { fmt, fmtNum, StatCard, Icon, nombreDe } from "../utils.jsx";
 
 // ── GRÁFICA CON TOOLTIP TÁCTIL ─────────────────────────────────────────────
 const CustomLineChart = ({ data }) => {
@@ -256,7 +256,7 @@ export default function Dashboard({ prendas, ventas, facturas = [] }) {
   }, {});
   const topList = Object.entries(topSales).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([cod, cant]) => {
     const pr = prendas.find(p => p.codigo === cod);
-    return { codigo: cod, nombre: pr?.descripcion || cod, cantidad: cant };
+    return { codigo: cod, nombre: (pr && nombreDe(pr)) || cod, cantidad: cant };
   });
 
   // ── PRENDAS DORMIDAS (rotación real por días sin venta) ──────────────────
@@ -495,7 +495,7 @@ export default function Dashboard({ prendas, ventas, facturas = [] }) {
             : prendasDormidas.map(p => (
               <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: p.diasSinVenta >= 60 ? "#FFEBEE" : "#FFF3E0", padding: "8px 12px", borderRadius: 10, marginBottom: 8 }}>
                 <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--dark)", margin: 0 }}>{p.descripcion}</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--dark)", margin: 0 }}>{nombreDe(p)}</p>
                   <p style={{ fontSize: 10, color: "var(--mid)", margin: "2px 0 0" }}>{p.stock} uds. · {p.codigo}</p>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>

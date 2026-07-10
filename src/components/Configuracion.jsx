@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { db, auth } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
-import { Icon, comprimirImagen } from "../utils.jsx";
+import { Icon, comprimirImagen, nombreDe } from "../utils.jsx";
 
 // ── compresor ancho, para banners (más resolución que las miniaturas normales) ──
 function comprimirImagenAncha(file) {
@@ -535,7 +535,7 @@ function AlmacenamientoTab() {
         const imagenes = Array.isArray(p.imagenes) ? p.imagenes : p.imagen ? [p.imagen] : [];
         const bytes = imagenes.reduce((acc, img) => acc + (img?.length || 0), 0);
         totalPrendas += bytes;
-        desglose.push({ nombre: p.descripcion || "Sin nombre", bytes, fotos: imagenes.length });
+        desglose.push({ nombre: nombreDe(p) || "Sin nombre", bytes, fotos: imagenes.length });
       });
       desglose.sort((a, b) => b.bytes - a.bytes);
 

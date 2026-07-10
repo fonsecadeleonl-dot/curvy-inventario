@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { db } from "../firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { esHoy, fmt, fmtNum, hoyObj, Icon } from "../utils.jsx";
+import { esHoy, fmt, fmtNum, hoyObj, Icon, nombreDe } from "../utils.jsx";
 
 const HORA = new Date().getHours();
 const SALUDO = HORA < 12 ? "¡Buenos días, CEO! ☀️" : HORA < 18 ? "¡Buenas tardes, jefa! 💅🏻" : "¡Buenas noches, reina! 🌙";
@@ -252,7 +252,7 @@ export default function Inicio({ prendas, ventas, facturas = [], setFacturas }) 
               return (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 10, background: agotada ? "#FFEBEE" : "#FFF3E0" }}>
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--dark)", margin: 0 }}>{p.descripcion}</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--dark)", margin: 0 }}>{nombreDe(p)}</p>
                     <p style={{ fontSize: 11, color: "var(--mid)", margin: "2px 0 0" }}>{p.codigo}{p.sku ? ` · SKU: ${p.sku}` : ""}</p>
                   </div>
                   <div style={{ textAlign: "right" }}>

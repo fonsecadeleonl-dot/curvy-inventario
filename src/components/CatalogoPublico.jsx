@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { db } from "../firebase";
 import { collection, getDocs, addDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
-import { fmt, Icon } from "../utils.jsx";
+import { fmt, Icon, nombreDe } from "../utils.jsx";
 
 const NUMERO_WA = "573017886206";
 const ORDEN_TALLAS = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
@@ -122,7 +122,7 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
   }, []);
 
   const resultados = busqueda.trim().length > 0
-    ? prendas.filter((p) => tieneImagen(p) && (p.descripcion || "").toLowerCase().includes(busqueda.toLowerCase()))
+    ? prendas.filter((p) => tieneImagen(p) && (nombreDe(p) || "").toLowerCase().includes(busqueda.toLowerCase()))
     : [];
 
   const irAProducto = (p) => { onProductoClick(p); onBusqueda(""); setMostrarResultados(false); setBuscadorAbierto(false); };
@@ -218,7 +218,7 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
                         onMouseEnter={(e) => e.currentTarget.style.background = "#FFF5F7"} onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}>
                         {img && <img src={img} alt="" style={{ width: 42, height: 42, borderRadius: 8, objectFit: "cover", objectPosition: "top", flexShrink: 0 }} />}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#1C0F17", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.descripcion}</p>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#1C0F17", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nombreDe(p)}</p>
                           <p style={{ margin: 0, fontSize: 11, color: "#C2185B", fontWeight: 700 }}>{fmt(p.precioVenta)} · {p.categoria}</p>
                         </div>
                       </div>
@@ -419,11 +419,11 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
             return (
               <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover carrusel-card" style={{ flexShrink: 0, width: 170, background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 16px rgba(136,14,79,0.08)", border: "1px solid #F3E4EF", cursor: "pointer", display: "flex", flexDirection: "column" }}>
                 <div style={{ aspectRatio: "3/4", background: "#FDF0F6", overflow: "hidden" }}>
-                  {img ? <img src={img} alt={p.descripcion} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
+                  {img ? <img src={img} alt={nombreDe(p)} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
                     : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="image" size={28} color="#E0B8D0" /></div>}
                 </div>
                 <div style={{ padding: "10px 12px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "#1C0F17", margin: "0 0 4px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3, flex: 1 }}>{p.descripcion}</p>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "#1C0F17", margin: "0 0 4px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3, flex: 1 }}>{nombreDe(p)}</p>
                   <p style={{ fontSize: 15, fontWeight: 800, color: "#8B1A4D", margin: "0 0 8px" }}>{fmt(p.precioVenta)}</p>
                   <button onClick={(e) => { e.stopPropagation(); onCardClick(p); }} style={{ width: "100%", padding: "7px 0", borderRadius: 12, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Ver prenda →</button>
                 </div>
@@ -488,7 +488,7 @@ function SeccionCategorias({ prendas, onSelect, onVerCatalogo, categoriasFS }) {
 
 /* ── SECCIÓN MÁS PEDIDAS ────────────────────────────── */
 function abrirWhatsappProducto(p) {
-  const texto = `Hola Curvy! 💕 Me interesa: ${p.descripcion} - Código: ${p.id}`;
+  const texto = `Hola Curvy! 💕 Me interesa: ${nombreDe(p)} - Código: ${p.id}`;
   window.open(waLink(texto), "_blank");
 }
 
@@ -504,13 +504,13 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
             const img = p.imagenes?.[0] || p.imagen;
             return (
               <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover" style={{ borderRadius: 20, overflow: "hidden", position: "relative", aspectRatio: "3/4", cursor: "pointer", boxShadow: "0 8px 32px rgba(139,26,77,0.18)" }}>
-                {img ? <img src={img} alt={p.descripcion} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                {img ? <img src={img} alt={nombreDe(p)} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #8B1A4D, #C2185B)" }} />}
                 <span style={{ position: "absolute", top: 12, right: 14, fontSize: 20, zIndex: 2 }}>✨</span>
                 <span style={{ position: "absolute", top: 12, left: 14, fontSize: 16, zIndex: 2 }}>🌸</span>
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(139,26,77,0.88) 0%, rgba(139,26,77,0.15) 55%, transparent 100%)" }} />
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px", zIndex: 2 }}>
-                  <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descripcion}</p>
+                  <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
                   <p style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 800, color: "#fff" }}>{fmt(p.precioVenta)}</p>
                   <button onClick={(e) => { e.stopPropagation(); abrirWhatsappProducto(p); }} style={{ width: "100%", padding: "10px 0", borderRadius: 14, background: "#fff", color: "#8B1A4D", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Pedir 💕</button>
                 </div>
@@ -633,7 +633,7 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
   return (
     <div onClick={onClick} className="grid-card tarjeta-hover" style={{ background: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", cursor: "pointer", position: "relative" }}>
       <div style={{ position: "relative", width: "100%", paddingTop: "120%", overflow: "hidden", background: "#FFF5F7" }}>
-        {img ? <img src={img} alt={p.descripcion} loading="lazy" decoding="async" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+        {img ? <img src={img} alt={nombreDe(p)} loading="lazy" decoding="async" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
           : <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <span style={{ fontSize: 32 }}>🪡</span><span style={{ fontSize: 11, color: "#C2185B", fontWeight: 500 }}>Foto próximamente</span>
             </div>}
@@ -646,7 +646,7 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
       </div>
       <div style={{ padding: "10px 12px 14px" }}>
         <span style={{ fontSize: 10, color: "#999", textTransform: "uppercase", letterSpacing: 1, fontWeight: 500 }}>{p.categoria}</span>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 34 }}>{p.descripcion}</p>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 34 }}>{nombreDe(p)}</p>
         <p style={{ fontSize: 17, fontWeight: 800, color: "#C2185B", margin: "0 0 10px" }}>{fmt(p.precioVenta)}</p>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {tallasDisp.length > 0 ? (
@@ -655,7 +655,7 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
               {tallasDisp.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           ) : <span style={{ flex: 1, fontSize: 11, color: "#999" }}>Talla única</span>}
-          <button onClick={(e) => { e.stopPropagation(); window.open(waLink(`Hola Curvy! 💕 Me interesa: ${p.descripcion}${tallaSel ? ` - Talla: ${tallaSel}` : ""} - Código: ${p.id}`), "_blank"); }}
+          <button onClick={(e) => { e.stopPropagation(); window.open(waLink(`Hola Curvy! 💕 Me interesa: ${nombreDe(p)}${tallaSel ? ` - Talla: ${tallaSel}` : ""} - Código: ${p.id}`), "_blank"); }}
             style={{ padding: "7px 14px", background: "#C2185B", color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
             💬 Pedir
           </button>
@@ -819,7 +819,9 @@ function GuiaTallas({ tallasDisp, onCerrar }) {
 /* ── SOBRE ESTA PRENDA ──────────────────────────────── */
 function SobreEstaPrenda({ prenda }) {
   const [verTodas, setVerTodas] = useState(false);
-  const lista = (prenda.caracteristicas || "").split("\n").filter((l) => l.trim());
+  const lista = Array.isArray(prenda.caracteristicas)
+    ? prenda.caracteristicas.filter((l) => l && l.trim())
+    : (prenda.caracteristicas || "").split("\n").filter((l) => l.trim());
   const visibles = verTodas ? lista : lista.slice(0, 3);
   const hayMas = lista.length > 3;
 
@@ -852,8 +854,8 @@ function SobreEstaPrenda({ prenda }) {
           )}
         </div>
       )}
-      {prenda.descripcion && lista.length > 0 && <hr style={{ border: "none", borderTop: "1px solid #F5E6EE", margin: "20px 0" }} />}
-      {prenda.descripcion && (
+      {prenda.nombre && prenda.descripcion && lista.length > 0 && <hr style={{ border: "none", borderTop: "1px solid #F5E6EE", margin: "20px 0" }} />}
+      {prenda.nombre && prenda.descripcion && (
         <div style={{ background: "#FFF5F7", borderRadius: 14, padding: "16px 20px", borderLeft: "3px solid #C2185B" }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: "#8B1A4D", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1, display: "flex", alignItems: "center", gap: 6 }}>📝 Descripción</p>
           <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8, margin: 0, whiteSpace: "pre-line" }}>{prenda.descripcion}</p>
@@ -1027,8 +1029,8 @@ function useMetaTagsProducto(prenda) {
     const tituloOriginal = document.title;
 
     const tallas = ORDEN_TALLAS.filter((t) => Number(prenda.stockPorTalla?.[t] || 0) > 0).join(", ");
-    const titulo = `${prenda.descripcion || prenda.codigo} | Curvy Vup`;
-    const descripcion = `${prenda.descripcion || prenda.categoria || "Ropa plus size"}${tallas ? ` · Tallas: ${tallas}` : ""} · Envíos a toda Colombia.`.slice(0, 160);
+    const titulo = `${nombreDe(prenda) || prenda.codigo} | Curvy Vup`;
+    const descripcion = `${prenda.descripcion || nombreDe(prenda) || prenda.categoria || "Ropa plus size"}${tallas ? ` · Tallas: ${tallas}` : ""} · Envíos a toda Colombia.`.slice(0, 160);
 
     document.title = titulo;
     selectores.forEach((sel) => document.querySelector(sel)?.setAttribute("content",
@@ -1057,8 +1059,8 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
   }, [prenda?.id]);
 
   const relacionados = calcularRelacionados(prenda, todasLasPrendas);
-  const textoPedido = encodeURIComponent(`Hola Curvy Vup! 💕 Me interesa: ${prenda?.descripcion}${tallaSel ? ` - Talla: ${tallaSel}` : ""} - Código: ${prenda?.codigo}`);
-  const textoAyuda = encodeURIComponent(`Hola Curvy Vup! Necesito ayuda con: ${prenda?.descripcion} - Código: ${prenda?.codigo}`);
+  const textoPedido = encodeURIComponent(`Hola Curvy Vup! 💕 Me interesa: ${nombreDe(prenda)}${tallaSel ? ` - Talla: ${tallaSel}` : ""} - Código: ${prenda?.codigo}`);
+  const textoAyuda = encodeURIComponent(`Hola Curvy Vup! Necesito ayuda con: ${nombreDe(prenda)} - Código: ${prenda?.codigo}`);
   const base = `https://api.whatsapp.com/send?phone=${NUMERO_WA}`;
 
   if (!prenda) return null;
@@ -1086,7 +1088,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
           <div className="imagen-principal-container">
             <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: "#FAFAFA", boxShadow: "0 4px 24px rgba(139,26,77,0.08)" }}>
               {imagenes[indiceImg] ? (
-                <ImagenPrincipalZoom src={imagenes[indiceImg]} alt={prenda?.descripcion} onClick={() => setZoomAbierto(true)} />
+                <ImagenPrincipalZoom src={imagenes[indiceImg]} alt={nombreDe(prenda)} onClick={() => setZoomAbierto(true)} />
               ) : <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>🪡</div>}
               {imagenes.length > 1 && (
                 <>
@@ -1114,7 +1116,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
               <span style={{ color: "#aaa", fontSize: 12 }}>Ref: {prenda.codigo}</span>
               {stock <= 2 && stock > 0 && <span style={{ background: "#FCE4EC", color: "#C2185B", fontSize: 10, fontWeight: 800, padding: "3px 10px", borderRadius: 20, border: "1px solid #F48FB1" }}>⚠️ ÚLTIMA(S) UNIDAD(ES)</span>}
             </div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.25, margin: "0 0 20px" }}>{prenda.descripcion}</h1>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.25, margin: "0 0 20px" }}>{nombreDe(prenda)}</h1>
             <div style={{ paddingBottom: 20, marginBottom: 20, borderBottom: "1px solid #F5E6EE" }}>
               <span style={{ fontSize: 13, color: "#888", fontWeight: 600, marginRight: 8 }}>Precio:</span>
               <span style={{ fontSize: 30, fontWeight: 900, color: "#C2185B" }}>{fmt(prenda.precioVenta)}</span>
@@ -1197,11 +1199,11 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                     {i === 1 && <div style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div>}
                     {s <= 2 && s > 0 && <div style={{ position: "absolute", top: 10, left: i < 2 ? "auto" : 10, right: i < 2 ? 10 : "auto", background: "#FCE4EC", color: "#C2185B", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 20, zIndex: 1, border: "1px solid #F48FB1" }}>⚠️ ÚLTIMA</div>}
                     <div style={{ position: "relative", paddingTop: "120%", overflow: "hidden", background: "#FAFAFA" }}>
-                      {img && <img src={img} alt={p.descripcion} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />}
+                      {img && <img src={img} alt={nombreDe(p)} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />}
                     </div>
                     <div style={{ padding: "10px 12px 14px" }}>
                       <span style={{ fontSize: 10, color: "#C2185B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.8px" }}>{p.categoria}</span>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, minHeight: 32 }}>{p.descripcion}</p>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, minHeight: 32 }}>{nombreDe(p)}</p>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 15, fontWeight: 800, color: "#C2185B" }}>{fmt(p.precioVenta)}</span>
                         <span style={{ fontSize: 10, color: "#999" }}>Ver →</span>
@@ -1396,7 +1398,7 @@ export default function CatalogoPublico() {
   const filtradas = useMemo(() => prendas.filter((p) => {
     if (!tieneImagen(p)) return false;
     const coincideCat = categoriaActiva === "todas" ? true : categoriaActiva === "otras" ? !CATEGORIAS_BASE.includes(p.categoria) : p.categoria?.toLowerCase() === categoriaActiva.toLowerCase();
-    const coincideBusq = (p.descripcion || "").toLowerCase().includes(busqueda.toLowerCase());
+    const coincideBusq = (nombreDe(p) || "").toLowerCase().includes(busqueda.toLowerCase());
     const coincideTalla = tallasActivas.length === 0 || tallasActivas.some((t) => p.stockPorTalla ? (Number(p.stockPorTalla[t]) || 0) > 0 : p.talla === t);
     return coincideCat && coincideTalla && coincideBusq;
   }), [prendas, categoriaActiva, tallasActivas, busqueda]);
@@ -1419,7 +1421,7 @@ export default function CatalogoPublico() {
     setCarrito((prev) => {
       const existe = prev.find((i) => i.id === prenda.id && i.talla === talla);
       if (existe) return prev.map((i) => (i.id === prenda.id && i.talla === talla ? { ...i, cantidad: i.cantidad + 1 } : i));
-      return [...prev, { id: prenda.id, descripcion: prenda.descripcion, precio: Number(prenda.precioVenta), talla, cantidad: 1, imagen: prenda.imagenes?.[0] || prenda.imagen }];
+      return [...prev, { id: prenda.id, descripcion: nombreDe(prenda), precio: Number(prenda.precioVenta), talla, cantidad: 1, imagen: prenda.imagenes?.[0] || prenda.imagen }];
     });
     setVerCarrito(true);
   };

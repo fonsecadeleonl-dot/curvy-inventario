@@ -15,6 +15,9 @@ export const fmtNum = (n) => {
 
 export const parseNum = (str) => String(str).replace(/\D/g, "");
 
+// Nombre corto a mostrar; cae al campo viejo "descripcion" en productos no migrados.
+export const nombreDe = (p) => p?.nombre || p?.descripcion || "";
+
 export const hoyObj = new Date();
 export const esHoy = (fechaISO) => {
   if (!fechaISO) return false;
