@@ -1110,8 +1110,12 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
   }, [prenda?.id]);
 
   const relacionados = calcularRelacionados(prenda, todasLasPrendas);
-  const textoPedido = encodeURIComponent(`Hola Curvy Vup! 💕 Me interesa: ${nombreDe(prenda)}${tallaSel ? ` - Talla: ${tallaSel}` : ""} - Código: ${prenda?.codigo}`);
-  const textoAyuda = encodeURIComponent(`Hola Curvy Vup! Necesito ayuda con: ${nombreDe(prenda)} - Código: ${prenda?.codigo}`);
+  const textoPedido = encodeURIComponent(
+    `Hola Curvy Vup! 😍 Quiero pedir esta prenda:\n🛍️ ${nombreDe(prenda)}${tallaSel ? `\n📏 Talla: ${tallaSel}` : ""}\n💰 Precio: ${fmt(precioEfectivo(prenda))}\n🔖 Código: ${prenda?.codigo}`
+  );
+  const textoAyuda = encodeURIComponent(
+    `Hola Curvy Vup! 🙋‍♀️ Tengo una duda sobre esta prenda:\n🛍️ ${nombreDe(prenda)}\n🔖 Código: ${prenda?.codigo}\n\n¿Me pueden ayudar? 💕`
+  );
   const base = `https://api.whatsapp.com/send?phone=${NUMERO_WA}`;
 
   if (!prenda) return null;
