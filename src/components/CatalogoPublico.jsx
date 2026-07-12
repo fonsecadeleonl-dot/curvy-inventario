@@ -813,8 +813,8 @@ function GuiaTallas({ tallasDisp, onCerrar }) {
       ], extra: { medida: "🔢 Talla numérica", valores: ["32-34", "34-36", "36-38", "38-40", "40-42"] } };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "flex-end" }} onClick={onCerrar}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "white", width: "100%", maxHeight: "90vh", borderRadius: "24px 24px 0 0", overflowY: "auto", padding: "0 0 32px" }}>
+    <div className="guia-tallas-overlay" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onCerrar}>
+      <div className="guia-tallas-panel" onClick={(e) => e.stopPropagation()} style={{ background: "white", width: "100%", maxHeight: "90vh", borderRadius: "24px 24px 0 0", overflowY: "auto", padding: "0 0 32px" }}>
         <div style={{ width: 40, height: 4, background: "#E0E0E0", borderRadius: 2, margin: "12px auto 20px" }} />
         <div style={{ textAlign: "center", padding: "0 24px 20px", borderBottom: "2px solid #FCE4EC" }}>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#8B1A4D", margin: "0 0 4px" }}>📏 Guía de Tallas</h2>
@@ -825,7 +825,7 @@ function GuiaTallas({ tallasDisp, onCerrar }) {
             💡 {esPlus ? "Mide el contorno de tu busto, cintura y cadera con una cinta métrica. Elige la talla donde más de tus medidas coincidan." : "Mide el contorno de tu busto, cintura y cadera. Si estás entre dos tallas, elige la talla mayor."}
           </p>
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <table className="guia-tallas-tabla" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "white" }}>
                   <th style={{ padding: "12px 8px 12px 16px", textAlign: "left", borderRadius: "12px 0 0 0" }}>Medida</th>
@@ -846,6 +846,9 @@ function GuiaTallas({ tallasDisp, onCerrar }) {
               </tbody>
             </table>
           </div>
+          <p style={{ fontSize: 11, color: "#999", margin: "12px 0 0", lineHeight: 1.5 }}>
+            El peso es referencial — dos personas con el mismo peso pueden usar tallas distintas según su contextura. Prioriza las medidas de busto, cintura y cadera.
+          </p>
           <div style={{ marginTop: 20, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", borderRadius: 14, padding: 16, color: "white", textAlign: "center" }}>
             <p style={{ fontSize: 13, margin: "0 0 8px", fontWeight: 700 }}>¿Dudas con tu talla? 💕</p>
             <a href={waLink("Hola Curvy Vup! Necesito ayuda para encontrar mi talla 📏")} target="_blank" rel="noopener noreferrer" style={{ color: "white", fontSize: 12, fontWeight: 600, textDecoration: "underline" }}>Escríbenos y te ayudamos a elegir ✨</a>
@@ -853,6 +856,13 @@ function GuiaTallas({ tallasDisp, onCerrar }) {
           <button onClick={onCerrar} style={{ width: "100%", marginTop: 16, padding: 14, background: "#F5F5F5", border: "none", borderRadius: 16, fontSize: 14, fontWeight: 700, color: "#666", cursor: "pointer" }}>Cerrar</button>
         </div>
       </div>
+      <style>{`
+        @media (min-width: 768px) {
+          .guia-tallas-overlay { align-items: center !important; }
+          .guia-tallas-panel { max-width: 750px !important; max-height: 85vh !important; border-radius: 24px !important; }
+          .guia-tallas-tabla th:not(:first-child), .guia-tallas-tabla td:not(:first-child) { padding-left: 6px !important; padding-right: 6px !important; }
+        }
+      `}</style>
     </div>
   );
 }
