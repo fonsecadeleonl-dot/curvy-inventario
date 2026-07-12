@@ -1193,7 +1193,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
               <a href={`${base}&text=${textoPedido}`} target="_blank" rel="noopener noreferrer"
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: 16, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "white", borderRadius: 16, fontSize: 16, fontWeight: 800, textDecoration: "none", boxShadow: "0 6px 20px rgba(194,24,91,0.3)" }}>
-                <WhatsappIcon size={20} /> Pedir por WhatsApp
+                <WhatsappIcon size={20} /> Realizar Pedido
               </a>
               <a href={`${base}&text=${textoAyuda}`} target="_blank" rel="noopener noreferrer"
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, background: "white", color: "#128C7E", border: "2px solid #25D366", borderRadius: 16, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
