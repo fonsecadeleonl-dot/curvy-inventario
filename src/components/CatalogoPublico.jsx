@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { db } from "../firebase";
 import { collection, getDocs, addDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
-import { fmt, Icon, nombreDe, ofertaVigente, precioEfectivo } from "../utils.jsx";
+import { fmt, Icon, nombreDe, ofertaVigente, precioEfectivo, diasParaVencer, porcentajeDescuento } from "../utils.jsx";
 
 const NUMERO_WA = "573017886206";
 const ORDEN_TALLAS = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
@@ -16,14 +16,41 @@ const tieneImagen = (p) => !!(p.imagenes?.[0]?.trim() || p.imagen?.trim());
 const fechaCreacion = (p) => (p.creadoEn?.toDate ? p.creadoEn.toDate() : new Date(p.fechaIngreso || p.creadoEn || 0));
 const waLink = (texto) => `https://api.whatsapp.com/send?phone=${NUMERO_WA}&text=${encodeURIComponent(texto)}`;
 
-/* ── PRECIO CON OFERTA (tachado + precio de oferta) ───── */
-function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, color = "#8B1A4D", ofertaColor = "#C2185B", tachadoColor = "#999" }) {
-  if (!ofertaVigente(p)) return <span style={{ fontSize, fontWeight, color }}>{fmt(p.precioVenta)}</span>;
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-      <span style={{ fontSize: fontSize * 0.7, fontWeight: 500, color: tachadoColor, textDecoration: "line-through" }}>{fmt(p.precioVenta)}</span>
-      <span style={{ fontSize, fontWeight, color: ofertaColor }}>{fmt(p.precioOferta)}</span>
+/* ── PRECIO CON OFERTA (oferta grande + badge -X% + tachado) ─ */
+function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, colorBase = "#8B1A4D", oscuro = false, compacto = false, etiqueta = null }) {
+  const colorEtiqueta = oscuro ? "rgba(255,255,255,0.85)" : "#888";
+  if (!ofertaVigente(p)) return (
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 8 }}>
+      {etiqueta && <span style={{ fontSize: 13, color: colorEtiqueta, fontWeight: 600 }}>{etiqueta}</span>}
+      <span style={{ fontSize, fontWeight, color: oscuro ? "#fff" : colorBase }}>{fmt(p.precioVenta)}</span>
     </span>
+  );
+  const pct = porcentajeDescuento(p);
+  const dias = diasParaVencer(p);
+  return (
+    <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <span className={compacto ? "precio-oferta-linea" : undefined} style={{ display: "inline-flex", alignItems: "baseline", gap: 8, flexWrap: compacto ? "wrap" : "nowrap" }}>
+        {etiqueta && <span style={{ fontSize: 13, color: colorEtiqueta, fontWeight: 600 }}>{etiqueta}</span>}
+        <span className={compacto ? "po-num" : undefined} style={{ fontSize, fontWeight, color: oscuro ? "#fff" : "#8B1A4A" }}>{fmt(p.precioOferta)}</span>
+        <span className={compacto ? "po-badge" : undefined} style={{ fontSize: Math.max(9, Math.round(fontSize * 0.5)), fontWeight: 700, color: oscuro ? "#fff" : "#8B1A4A", background: oscuro ? "rgba(255,255,255,0.2)" : "#FCE8EF", padding: "2px 7px", borderRadius: 10, whiteSpace: "nowrap" }}>-{pct}%</span>
+        <span className={compacto ? "po-tachado" : undefined} style={{ fontSize: Math.round(fontSize * 0.65), fontWeight: 500, color: oscuro ? "rgba(255,255,255,0.65)" : "#9CA3AF", textDecoration: "line-through", whiteSpace: "nowrap" }}>{fmt(p.precioVenta)}</span>
+      </span>
+      {dias !== null && (
+        <span style={{ display: "block", fontSize: 11, fontWeight: 600, color: oscuro ? "rgba(255,255,255,0.75)" : "#B0455E" }}>
+          {dias === 0 ? "Termina hoy" : dias === 1 ? "Termina en 1 día" : `Termina en ${dias} días`}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/* ── BADGE DE DESCUENTO SOBRE LA FOTO (pill sólido) ─── */
+function BadgeDescuentoFoto({ p }) {
+  if (!ofertaVigente(p)) return null;
+  return (
+    <div className="badge-oferta-pill">
+      <span className="boe-num">-{porcentajeDescuento(p)}</span><span className="boe-pct">%</span>
+    </div>
   );
 }
 
@@ -424,18 +451,19 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
       <div style={{ position: "relative" }}>
         <button onClick={() => ref.current?.scrollBy({ left: -anchoTarjeta * 2, behavior: "smooth" })} style={{ position: "absolute", left: 4, top: "40%", zIndex: 5, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "1px solid #F3E4EF", cursor: "pointer", fontSize: 16 }}>‹</button>
         <div ref={ref} className="no-scrollbar carrusel-track" onScroll={(e) => setScrollIdx(Math.round(e.target.scrollLeft / anchoTarjeta))}
-          style={{ overflowX: "auto", padding: "4px 20px 16px", display: "flex", gap: 14 }}>
+          style={{ overflowX: "auto", padding: "4px 20px 16px", display: "flex", gap: 14, justifyContent: totalPaginas === 1 ? "center" : "flex-start" }}>
           {prendas.map((p) => {
             const img = p.imagenes?.[0] || p.imagen;
             return (
               <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover carrusel-card" style={{ flexShrink: 0, width: 170, background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 16px rgba(136,14,79,0.08)", border: "1px solid #F3E4EF", cursor: "pointer", display: "flex", flexDirection: "column" }}>
-                <div style={{ aspectRatio: "3/4", background: "#FDF0F6", overflow: "hidden" }}>
+                <div style={{ position: "relative", aspectRatio: "3/4", background: "#FDF0F6", overflow: "hidden" }}>
                   {img ? <img src={img} alt={nombreDe(p)} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
                     : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="image" size={28} color="#E0B8D0" /></div>}
+                  <BadgeDescuentoFoto p={p} />
                 </div>
                 <div style={{ padding: "10px 12px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
                   <p style={{ fontSize: 12, fontWeight: 700, color: "#1C0F17", margin: "0 0 4px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3, flex: 1 }}>{nombreDe(p)}</p>
-                  <p style={{ margin: "0 0 8px" }}><PrecioConOferta p={p} fontSize={15} color="#8B1A4D" /></p>
+                  <p style={{ margin: "0 0 8px" }}><PrecioConOferta p={p} fontSize={15} colorBase="#8B1A4D" compacto /></p>
                   <button onClick={(e) => { e.stopPropagation(); onCardClick(p); }} style={{ width: "100%", padding: "7px 0", borderRadius: 12, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Ver prenda →</button>
                 </div>
               </div>
@@ -518,11 +546,12 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
                 {img ? <img src={img} alt={nombreDe(p)} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #8B1A4D, #C2185B)" }} />}
                 <span style={{ position: "absolute", top: 12, right: 14, fontSize: 20, zIndex: 2 }}>✨</span>
-                <span style={{ position: "absolute", top: 12, left: 14, fontSize: 16, zIndex: 2 }}>🌸</span>
+                {!ofertaVigente(p) && <span style={{ position: "absolute", top: 12, left: 14, fontSize: 16, zIndex: 2 }}>🌸</span>}
+                <BadgeDescuentoFoto p={p} />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(139,26,77,0.88) 0%, rgba(139,26,77,0.15) 55%, transparent 100%)" }} />
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px", zIndex: 2 }}>
                   <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
-                  <p style={{ margin: "0 0 12px" }}><PrecioConOferta p={p} fontSize={18} color="#fff" tachadoColor="rgba(255,255,255,0.65)" /></p>
+                  <p style={{ margin: "0 0 12px" }}><PrecioConOferta p={p} fontSize={18} oscuro compacto /></p>
                   <button onClick={(e) => { e.stopPropagation(); abrirWhatsappProducto(p); }} style={{ width: "100%", padding: "10px 0", borderRadius: 14, background: "#fff", color: "#8B1A4D", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Pedir 💕</button>
                 </div>
               </div>
@@ -648,9 +677,9 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
           : <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <span style={{ fontSize: 32 }}>🪡</span><span style={{ fontSize: 11, color: "#C2185B", fontWeight: 500 }}>Foto próximamente</span>
             </div>}
-        {ofertaVigente(p) ? <span style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>🏷️ OFERTA</span>
-          : ultimaUnidad ? <span style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>⚠️ ÚLTIMA</span>
-          : esNueva ? <span style={{ position: "absolute", top: 10, left: 10, background: "#FCE4EC", color: "#C2185B", border: "1px solid #C2185B", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>🌸 NUEVO</span> : null}
+        <BadgeDescuentoFoto p={p} />
+        {!ofertaVigente(p) && (ultimaUnidad ? <span style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>⚠️ ÚLTIMA</span>
+          : esNueva ? <span style={{ position: "absolute", top: 10, left: 10, background: "#FCE4EC", color: "#C2185B", border: "1px solid #C2185B", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>🌸 NUEVO</span> : null)}
         <button onClick={(e) => { e.stopPropagation(); onToggleLike(p.id); }}
           style={{ position: "absolute", top: 10, right: 10, width: 32, height: 32, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15 }}>
           {liked ? "❤️" : "🤍"}
@@ -659,7 +688,7 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
       <div style={{ padding: "10px 12px 14px" }}>
         <span style={{ fontSize: 10, color: "#999", textTransform: "uppercase", letterSpacing: 1, fontWeight: 500 }}>{p.categoria}</span>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 34 }}>{nombreDe(p)}</p>
-        <p style={{ margin: "0 0 10px" }}><PrecioConOferta p={p} fontSize={17} color="#C2185B" /></p>
+        <p style={{ margin: "0 0 10px" }}><PrecioConOferta p={p} fontSize={17} colorBase="#C2185B" compacto /></p>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {tallasDisp.length > 0 ? (
             <select value={tallaSel} onChange={(e) => { e.stopPropagation(); setTallaSel(e.target.value); }} onClick={(e) => e.stopPropagation()}
@@ -1130,9 +1159,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
             </div>
             <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.25, margin: "0 0 20px" }}>{nombreDe(prenda)}</h1>
             <div style={{ paddingBottom: 20, marginBottom: 20, borderBottom: "1px solid #F5E6EE" }}>
-              <span style={{ fontSize: 13, color: "#888", fontWeight: 600, marginRight: 8 }}>Precio:</span>
-              <PrecioConOferta p={prenda} fontSize={30} fontWeight={900} color="#C2185B" />
-              {ofertaVigente(prenda) && <span style={{ marginLeft: 10, background: "#C2185B", color: "#fff", fontSize: 10, fontWeight: 800, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>🏷️ OFERTA</span>}
+              <PrecioConOferta p={prenda} fontSize={30} fontWeight={900} colorBase="#C2185B" etiqueta="Precio:" />
             </div>
 
             {tallasDisp.length > 0 && (
@@ -1160,7 +1187,16 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
               </a>
             </div>
 
-            <style>{`.garantias-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; } @media (max-width: 480px) { .garantias-grid { grid-template-columns: 1fr !important; } }`}</style>
+            <style>{`
+              .garantias-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+              @media (max-width: 480px) {
+                .garantias-grid { gap: 8px; }
+                .garantias-item { padding: 10px !important; gap: 8px !important; }
+                .garantias-icono { width: 30px !important; height: 30px !important; font-size: 15px !important; }
+                .garantias-titulo { font-size: 11px !important; }
+                .garantias-desc { font-size: 10px !important; }
+              }
+            `}</style>
             <div className="garantias-grid">
               {[
                 { icono: "🚚", titulo: "Envíos", desc: "A todo Colombia" },
@@ -1168,11 +1204,11 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                 { icono: "📏", titulo: "Tallas", desc: "OXL al 4XL", onClick: () => setGuiaAbierta(true) },
                 { icono: "🎧", titulo: "Atención", desc: "Personalizada 24/7" },
               ].map((it) => (
-                <div key={it.titulo} onClick={it.onClick} style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "#FFFBFC", border: "1px solid #F5E6EE", borderRadius: 14, padding: 14, cursor: it.onClick ? "pointer" : "default" }}>
-                  <div style={{ width: 36, height: 36, background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{it.icono}</div>
+                <div key={it.titulo} onClick={it.onClick} className="garantias-item" style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "#FFFBFC", border: "1px solid #F5E6EE", borderRadius: 14, padding: 14, cursor: it.onClick ? "pointer" : "default" }}>
+                  <div className="garantias-icono" style={{ width: 36, height: 36, background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{it.icono}</div>
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 800, color: "#1a1a1a", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{it.titulo}</p>
-                    <p style={{ fontSize: 11, color: "#666", margin: 0, lineHeight: 1.4 }}>{it.desc}</p>
+                    <p className="garantias-titulo" style={{ fontSize: 12, fontWeight: 800, color: "#1a1a1a", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{it.titulo}</p>
+                    <p className="garantias-desc" style={{ fontSize: 11, color: "#666", margin: 0, lineHeight: 1.4 }}>{it.desc}</p>
                   </div>
                 </div>
               ))}
@@ -1208,18 +1244,18 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                 return (
                   <div key={p.id} onClick={() => { onCargarProducto?.(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="tarjeta-hover"
                     style={{ background: "white", borderRadius: 16, overflow: "hidden", cursor: "pointer", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", position: "relative" }}>
-                    {ofertaVigente(p) ? <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🏷️ OFERTA</div>
-                      : i === 0 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🔥 POPULAR</div>
-                      : i === 1 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div> : null}
+                    {!ofertaVigente(p) && (i === 0 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🔥 POPULAR</div>
+                      : i === 1 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div> : null)}
                     {s <= 2 && s > 0 && <div style={{ position: "absolute", top: 10, left: i < 2 ? "auto" : 10, right: i < 2 ? 10 : "auto", background: "#FCE4EC", color: "#C2185B", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 20, zIndex: 1, border: "1px solid #F48FB1" }}>⚠️ ÚLTIMA</div>}
                     <div style={{ position: "relative", paddingTop: "120%", overflow: "hidden", background: "#FAFAFA" }}>
                       {img && <img src={img} alt={nombreDe(p)} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />}
+                      <BadgeDescuentoFoto p={p} />
                     </div>
                     <div style={{ padding: "10px 12px 14px" }}>
                       <span style={{ fontSize: 10, color: "#C2185B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.8px" }}>{p.categoria}</span>
                       <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, minHeight: 32 }}>{nombreDe(p)}</p>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <PrecioConOferta p={p} fontSize={15} color="#C2185B" />
+                        <PrecioConOferta p={p} fontSize={15} colorBase="#C2185B" compacto />
                         <span style={{ fontSize: 10, color: "#999" }}>Ver →</span>
                       </div>
                     </div>
@@ -1453,7 +1489,9 @@ export default function CatalogoPublico() {
   const todasConFoto = useMemo(() => prendas.filter(tieneImagen), [prendas]);
   const recientes = useMemo(() => [...todasConFoto].sort((a, b) => fechaCreacion(b) - fechaCreacion(a)).slice(0, 12), [todasConFoto]);
   const masPedidas = todasConFoto.slice(0, 3);
-  const enOfertas = [...todasConFoto].reverse().slice(0, 14);
+  const enOfertas = useMemo(() => todasConFoto.filter(ofertaVigente)
+    .sort((a, b) => (1 - Number(a.precioOferta) / Number(a.precioVenta)) < (1 - Number(b.precioOferta) / Number(b.precioVenta)) ? 1 : -1)
+    .slice(0, 14), [todasConFoto]);
   const paraInstagram = todasConFoto.slice(0, 6);
 
   const irACatalogo = () => {
@@ -1527,7 +1565,7 @@ export default function CatalogoPublico() {
 
       <SeccionMasPedidas prendas={masPedidas} onCardClick={abrirProducto} />
       <SeccionCTA onVerCatalogo={irACatalogo} />
-      <SeccionCarrusel title="Ofertas de la Semana 🔥" prendas={enOfertas} bg="#FAF7F4" onCardClick={abrirProducto} onVerTodas={irACatalogo} />
+      <SeccionCarrusel title="Ofertas de la Semana 🔥" prendas={enOfertas} bg="linear-gradient(135deg, #FCE8EF 0%, #FBEFF3 100%)" onCardClick={abrirProducto} onVerTodas={irACatalogo} />
       <SeccionInstagram fotos={paraInstagram} />
       <Footer />
       <BotonWhatsappFlotante />
@@ -1581,6 +1619,23 @@ export default function CatalogoPublico() {
           .carrusel-track { gap: 20px !important; max-width: 1400px; margin: 0 auto; }
           .carrusel-card { width: 280px !important; }
         }
+        @media (max-width: 480px) {
+          .precio-oferta-linea { gap: 5px !important; }
+          .po-num { font-size: 13px !important; }
+          .po-badge { font-size: 9px !important; padding: 1px 5px !important; }
+          .po-tachado { font-size: 10px !important; }
+        }
+
+        .badge-oferta-pill {
+          position: absolute; top: 0; left: 0; z-index: 3; pointer-events: none;
+          display: flex; align-items: baseline; gap: 1px;
+          background: #8B1A4A; color: #fff;
+          border-radius: 0 999px 999px 0;
+          padding: 6px 14px 6px 12px;
+          font-family: 'Playfair Display', serif;
+        }
+        .badge-oferta-pill .boe-num { font-size: 16px; font-style: italic; font-weight: 500; line-height: 1; }
+        .badge-oferta-pill .boe-pct { font-size: 11px; font-style: italic; font-weight: 500; line-height: 1; }
       `}</style>
     </div>
   );

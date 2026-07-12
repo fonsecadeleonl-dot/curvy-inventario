@@ -18,15 +18,32 @@ export const parseNum = (str) => String(str).replace(/\D/g, "");
 // Nombre corto a mostrar; cae al campo viejo "descripcion" en productos no migrados.
 export const nombreDe = (p) => p?.nombre || p?.descripcion || "";
 
+// "Vence el X" incluye el día X completo, hasta las 23:59:59.999 de esa fecha.
+const finDelDia = (fechaISO) => {
+  const f = new Date(fechaISO);
+  f.setHours(23, 59, 59, 999);
+  return f;
+};
+
 // Oferta vigente = activa, con precio de oferta, y sin fecha de vencimiento pasada.
 export const ofertaVigente = (p) => {
   if (!p?.ofertaActiva || !p?.precioOferta) return false;
-  if (p.ofertaHasta && new Date(p.ofertaHasta) < new Date()) return false;
+  if (p.ofertaHasta && finDelDia(p.ofertaHasta) < new Date()) return false;
   return true;
 };
 
 // Precio real a cobrar/mostrar: el de oferta si está vigente, si no el normal.
 export const precioEfectivo = (p) => Number(ofertaVigente(p) ? p.precioOferta : p?.precioVenta) || 0;
+
+// % de descuento redondeado; asume que ya se validó ofertaVigente(p).
+export const porcentajeDescuento = (p) => Math.round((1 - Number(p.precioOferta) / Number(p.precioVenta)) * 100);
+
+// Días que faltan para que venza la oferta; null si no tiene fecha límite.
+export const diasParaVencer = (p) => {
+  if (!p?.ofertaHasta) return null;
+  const ms = finDelDia(p.ofertaHasta) - new Date();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+};
 
 export const hoyObj = new Date();
 export const esHoy = (fechaISO) => {
