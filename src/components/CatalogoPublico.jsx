@@ -798,7 +798,10 @@ function BarraFiltros({ categoriasFS, categoriaActiva, setCategoriaActiva, talla
 }
 
 /* ── GUÍA DE TALLAS ──────────────────────────────────── */
-function GuiaTallas({ tallasDisp, onCerrar }) {
+function GuiaTallas({ tallasDisp, prenda, onCerrar }) {
+  const textoAyudaTalla = prenda
+    ? `Hola Curvy Vup! Necesito ayuda para encontrar mi talla 📏 en esta prenda:\n🛍️ ${nombreDe(prenda)}\n🔖 Código: ${prenda.codigo}\n\n¿Qué talla me recomiendan?`
+    : "Hola Curvy Vup! Necesito ayuda para encontrar mi talla 📏";
   const esPlus = tallasDisp.some((t) => TALLAS_PLUS.includes(t));
   const tabla = esPlus
     ? { headers: ["OXL", "1XL", "2XL", "3XL", "4XL"], filas: [
@@ -851,7 +854,7 @@ function GuiaTallas({ tallasDisp, onCerrar }) {
           </p>
           <div style={{ marginTop: 20, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", borderRadius: 14, padding: 16, color: "white", textAlign: "center" }}>
             <p style={{ fontSize: 13, margin: "0 0 8px", fontWeight: 700 }}>¿Dudas con tu talla? 💕</p>
-            <a href={waLink("Hola Curvy Vup! Necesito ayuda para encontrar mi talla 📏")} target="_blank" rel="noopener noreferrer" style={{ color: "white", fontSize: 12, fontWeight: 600, textDecoration: "underline" }}>Escríbenos y te ayudamos a elegir ✨</a>
+            <a href={waLink(textoAyudaTalla)} target="_blank" rel="noopener noreferrer" style={{ color: "white", fontSize: 12, fontWeight: 600, textDecoration: "underline" }}>Escríbenos y te ayudamos a elegir ✨</a>
           </div>
           <button onClick={onCerrar} style={{ width: "100%", marginTop: 16, padding: 14, background: "#F5F5F5", border: "none", borderRadius: 16, fontSize: 14, fontWeight: 700, color: "#666", cursor: "pointer" }}>Cerrar</button>
         </div>
@@ -1281,7 +1284,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
         )}
       </div>
 
-      {guiaAbierta && <GuiaTallas tallasDisp={tallasDisp} onCerrar={() => setGuiaAbierta(false)} />}
+      {guiaAbierta && <GuiaTallas tallasDisp={tallasDisp} prenda={prenda} onCerrar={() => setGuiaAbierta(false)} />}
 
       {zoomAbierto && (
         <div onClick={() => setZoomAbierto(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out" }}>
