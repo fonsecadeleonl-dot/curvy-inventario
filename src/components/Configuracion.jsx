@@ -4,21 +4,32 @@ import { collection, addDoc, doc, updateDoc, deleteDoc, getDocs, query, orderBy,
 import { Icon, comprimirImagen, nombreDe, SOPORTA_WEBP } from "../utils.jsx";
 
 // ── compresor ancho, para banners (más resolución que las miniaturas normales) ──
+// Resolución fija en 1920px para que se vea nítida en pantallas grandes; si el
+// resultado se acerca al límite de 1MiB por documento de Firestore (no hay
+// Storage en este proyecto), baja calidad en pasos — nunca resolución — hasta
+// caber con margen.
 function comprimirImagenAncha(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (e) => {
       const img = new Image();
-      img.src = e.target.result;
       img.onload = () => {
-        const scale = Math.min(1, 1000 / img.width);
+        const scale = Math.min(1, 1920 / img.width);
         const canvas = document.createElement("canvas");
         canvas.width = img.width * scale;
         canvas.height = img.height * scale;
         canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL(SOPORTA_WEBP ? "image/webp" : "image/jpeg", 0.88));
+        const formato = SOPORTA_WEBP ? "image/webp" : "image/jpeg";
+        let calidad = 0.93;
+        let resultado = canvas.toDataURL(formato, calidad);
+        while (resultado.length > 950 * 1024 * 1.37 && calidad > 0.75) {
+          calidad -= 0.05;
+          resultado = canvas.toDataURL(formato, calidad);
+        }
+        resolve(resultado);
       };
+      img.src = e.target.result;
     };
   });
 }
