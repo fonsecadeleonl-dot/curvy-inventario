@@ -54,6 +54,32 @@ function BadgeDescuentoFoto({ p }) {
   );
 }
 
+/* ── DOTS DE FOTOS (indicador de cantidad, interactivo o solo visual) ─── */
+function DotsFotos({ cantidad, activo = 0, arriba = false }) {
+  if (cantidad <= 1) return null;
+  return (
+    <div className={arriba ? "dots-fotos dots-arriba" : "dots-fotos"}>
+      {Array.from({ length: cantidad }).map((_, i) => (
+        <span key={i} className={i === activo ? "dot-activo" : ""} />
+      ))}
+    </div>
+  );
+}
+
+/* ── IMAGEN DE TARJETA CON FADE AL HOVER (desktop, 2+ fotos) ───
+   El contenedor padre necesita className="img-hover-wrap" para que
+   el :hover se detecte sobre él, no sobre las imágenes superpuestas. */
+function ImagenTarjetaHover({ imagenes, alt, imgStyle }) {
+  const principal = imagenes?.[0];
+  const segunda = imagenes?.[1];
+  return (
+    <>
+      <img src={principal} alt={alt} loading="lazy" decoding="async" className={segunda ? "img-a" : undefined} style={imgStyle} />
+      {segunda && <img src={segunda} alt={alt} loading="lazy" decoding="async" className="img-b" style={imgStyle} />}
+    </>
+  );
+}
+
 /* ── ICONOS ─────────────────────────────────────────── */
 const CartIcon = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -456,10 +482,11 @@ function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, o
             const img = p.imagenes?.[0] || p.imagen;
             return (
               <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover carrusel-card" style={{ flexShrink: 0, width: 170, background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 16px rgba(136,14,79,0.08)", border: "1px solid #F3E4EF", cursor: "pointer", display: "flex", flexDirection: "column" }}>
-                <div style={{ position: "relative", aspectRatio: "3/4", background: "#FDF0F6", overflow: "hidden" }}>
-                  {img ? <img src={img} alt={nombreDe(p)} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
+                <div className="img-hover-wrap" style={{ position: "relative", aspectRatio: "3/4", background: "#FDF0F6", overflow: "hidden" }}>
+                  {img ? <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
                     : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="image" size={28} color="#E0B8D0" /></div>}
                   <BadgeDescuentoFoto p={p} />
+                  <DotsFotos cantidad={p.imagenes?.length || 0} />
                 </div>
                 <div style={{ padding: "10px 12px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
                   <p style={{ fontSize: 12, fontWeight: 700, color: "#1C0F17", margin: "0 0 4px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3, flex: 1 }}>{nombreDe(p)}</p>
@@ -542,12 +569,13 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
           {prendas.slice(0, 3).map((p) => {
             const img = p.imagenes?.[0] || p.imagen;
             return (
-              <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover" style={{ borderRadius: 20, overflow: "hidden", position: "relative", aspectRatio: "3/4", cursor: "pointer", boxShadow: "0 8px 32px rgba(139,26,77,0.18)" }}>
-                {img ? <img src={img} alt={nombreDe(p)} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover img-hover-wrap" style={{ borderRadius: 20, overflow: "hidden", position: "relative", aspectRatio: "3/4", cursor: "pointer", boxShadow: "0 8px 32px rgba(139,26,77,0.18)" }}>
+                {img ? <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #8B1A4D, #C2185B)" }} />}
                 <span style={{ position: "absolute", top: 12, right: 14, fontSize: 20, zIndex: 2 }}>✨</span>
                 {!ofertaVigente(p) && <span style={{ position: "absolute", top: 12, left: 14, fontSize: 16, zIndex: 2 }}>🌸</span>}
                 <BadgeDescuentoFoto p={p} />
+                <DotsFotos cantidad={p.imagenes?.length || 0} arriba />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(139,26,77,0.88) 0%, rgba(139,26,77,0.15) 55%, transparent 100%)" }} />
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px", zIndex: 2 }}>
                   <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
@@ -663,20 +691,37 @@ function Footer() {
 
 /* ── TARJETA DE PRODUCTO (grid principal) ───────────── */
 function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
-  const img = p.imagenes?.[0] || p.imagen;
+  const imagenes = p.imagenes?.length ? p.imagenes : (p.imagen ? [p.imagen] : []);
   const stockTotal = Number(p.stock) || 0;
   const tallasDisp = TALLAS_FILTRO.filter((t) => Number(p.stockPorTalla?.[t] || 0) > 0);
   const [tallaSel, setTallaSel] = useState(tallasDisp[0] || "");
+  const [indiceImg, setIndiceImg] = useState(0);
+  const [hoverActivo, setHoverActivo] = useState(false);
+  const touchRef = useRef({ x: 0 });
   const ultimaUnidad = stockTotal > 0 && stockTotal <= 1;
   const esNueva = (Date.now() - fechaCreacion(p).getTime()) / (1000 * 60 * 60 * 24) <= 7;
+  const indiceMostrado = hoverActivo && indiceImg === 0 && imagenes.length > 1 ? 1 : indiceImg;
+
+  const onTouchStart = (e) => { touchRef.current.x = e.touches[0].clientX; };
+  const onTouchEnd = (e) => {
+    const delta = touchRef.current.x - e.changedTouches[0].clientX;
+    if (Math.abs(delta) < 35) return;
+    setIndiceImg((i) => Math.min(imagenes.length - 1, Math.max(0, i + (delta > 0 ? 1 : -1))));
+  };
 
   return (
     <div onClick={onClick} className="grid-card tarjeta-hover" style={{ background: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", cursor: "pointer", position: "relative" }}>
-      <div style={{ position: "relative", width: "100%", paddingTop: "120%", overflow: "hidden", background: "#FFF5F7" }}>
-        {img ? <img src={img} alt={nombreDe(p)} loading="lazy" decoding="async" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
-          : <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      <div style={{ position: "relative", width: "100%", paddingTop: "120%", overflow: "hidden", background: "#FFF5F7", touchAction: "pan-y" }}
+        onMouseEnter={() => setHoverActivo(true)} onMouseLeave={() => setHoverActivo(false)}
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        {imagenes.length > 0 ? imagenes.map((src, i) => (
+          <img key={i} src={src} alt={nombreDe(p)} loading="lazy" decoding="async"
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", opacity: i === indiceMostrado ? 1 : 0, transition: "opacity 250ms ease", pointerEvents: "none" }} />
+        )) : (
+          <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <span style={{ fontSize: 32 }}>🪡</span><span style={{ fontSize: 11, color: "#C2185B", fontWeight: 500 }}>Foto próximamente</span>
-            </div>}
+            </div>
+        )}
         <BadgeDescuentoFoto p={p} />
         {!ofertaVigente(p) && (ultimaUnidad ? <span style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>⚠️ ÚLTIMA</span>
           : esNueva ? <span style={{ position: "absolute", top: 10, left: 10, background: "#FCE4EC", color: "#C2185B", border: "1px solid #C2185B", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>🌸 NUEVO</span> : null)}
@@ -684,6 +729,7 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
           style={{ position: "absolute", top: 10, right: 10, width: 32, height: 32, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15 }}>
           {liked ? "❤️" : "🤍"}
         </button>
+        <DotsFotos cantidad={imagenes.length} activo={indiceImg} />
       </div>
       <div style={{ padding: "10px 12px 14px" }}>
         <span style={{ fontSize: 10, color: "#999", textTransform: "uppercase", letterSpacing: 1, fontWeight: 500 }}>{p.categoria}</span>
@@ -1264,9 +1310,10 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                     {!ofertaVigente(p) && (i === 0 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🔥 POPULAR</div>
                       : i === 1 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div> : null)}
                     {s <= 2 && s > 0 && <div style={{ position: "absolute", top: 10, left: i < 2 ? "auto" : 10, right: i < 2 ? 10 : "auto", background: "#FCE4EC", color: "#C2185B", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 20, zIndex: 1, border: "1px solid #F48FB1" }}>⚠️ ÚLTIMA</div>}
-                    <div style={{ position: "relative", paddingTop: "120%", overflow: "hidden", background: "#FAFAFA" }}>
-                      {img && <img src={img} alt={nombreDe(p)} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />}
+                    <div className="img-hover-wrap" style={{ position: "relative", paddingTop: "120%", overflow: "hidden", background: "#FAFAFA" }}>
+                      {img && <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />}
                       <BadgeDescuentoFoto p={p} />
+                      <DotsFotos cantidad={p.imagenes?.length || 0} />
                     </div>
                     <div style={{ padding: "10px 12px 14px" }}>
                       <span style={{ fontSize: 10, color: "#C2185B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.8px" }}>{p.categoria}</span>
@@ -1653,6 +1700,18 @@ export default function CatalogoPublico() {
         }
         .badge-oferta-pill .boe-num { font-size: 16px; font-style: italic; font-weight: 500; line-height: 1; }
         .badge-oferta-pill .boe-pct { font-size: 11px; font-style: italic; font-weight: 500; line-height: 1; }
+
+        .img-hover-wrap .img-b { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 250ms ease; }
+        .img-hover-wrap .img-a { pointer-events: none; transition: opacity 250ms ease; }
+        @media (hover: hover) and (pointer: fine) {
+          .img-hover-wrap:hover .img-a { opacity: 0; }
+          .img-hover-wrap:hover .img-b { opacity: 1; }
+        }
+
+        .dots-fotos { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; gap: 4px; pointer-events: none; }
+        .dots-fotos.dots-arriba { bottom: auto; top: 12px; }
+        .dots-fotos span { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.6); box-shadow: 0 0 0 1px rgba(0,0,0,0.2); transition: all 0.2s ease; }
+        .dots-fotos span.dot-activo { background: #fff; width: 6px; height: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.2); }
       `}</style>
     </div>
   );
