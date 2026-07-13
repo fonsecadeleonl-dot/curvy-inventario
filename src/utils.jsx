@@ -63,7 +63,7 @@ export const fmtFecha = (iso) => {
 };
 
 // Firefox/Chrome/Edge saben codificar WebP por canvas; Safari viejo no — ahí cae a JPEG solo.
-const SOPORTA_WEBP = (() => {
+export const SOPORTA_WEBP = (() => {
   try {
     const c = document.createElement("canvas");
     c.width = c.height = 1;

@@ -369,7 +369,7 @@ function HeroCarousel({ slides, onVerCatalogo }) {
         return (
           <div key={s.id || idx} style={{ position: "absolute", inset: 0, opacity: idx === i ? 1 : 0, transition: "opacity 0.8s ease-in-out", zIndex: idx === i ? 1 : 0, background: conImagen ? "transparent" : "linear-gradient(135deg, #8B1A4D, #C2185B)" }}>
             {conImagen && <img src={s.imagen} alt={s.titulo} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `${s.posicion?.x ?? 50}% ${s.posicion?.y ?? 50}%` }} />}
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "32px 80px 40px 32px", background: "linear-gradient(to top, rgba(139,26,77,0.88) 0%, rgba(139,26,77,0.35) 65%, transparent 100%)", zIndex: 10 }}>
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "32px 80px 40px 32px", background: "linear-gradient(to top, rgba(139,26,77,0.72) 0%, rgba(139,26,77,0.18) 40%, transparent 65%)", zIndex: 10 }}>
               {s.badge && <span style={{ display: "inline-flex", alignItems: "center", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, padding: "5px 14px", fontSize: 11, fontWeight: 700, color: "#fff", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16, width: "fit-content" }}>{s.badge}</span>}
               <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(22px,5vw,46px)", fontWeight: 800, color: "#fff", margin: "0 0 8px", lineHeight: 1.1, textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>{s.titulo}</h2>
               <p style={{ fontSize: "clamp(12px,2vw,15px)", color: "rgba(255,255,255,0.9)", margin: "0 0 20px", lineHeight: 1.5 }}>{s.subtitulo}</p>

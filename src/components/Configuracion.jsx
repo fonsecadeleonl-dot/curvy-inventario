@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { db, auth } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
-import { Icon, comprimirImagen, nombreDe } from "../utils.jsx";
+import { Icon, comprimirImagen, nombreDe, SOPORTA_WEBP } from "../utils.jsx";
 
 // ── compresor ancho, para banners (más resolución que las miniaturas normales) ──
 function comprimirImagenAncha(file) {
@@ -17,7 +17,7 @@ function comprimirImagenAncha(file) {
         canvas.width = img.width * scale;
         canvas.height = img.height * scale;
         canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.82));
+        resolve(canvas.toDataURL(SOPORTA_WEBP ? "image/webp" : "image/jpeg", 0.88));
       };
     };
   });
