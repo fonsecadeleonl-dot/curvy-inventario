@@ -427,6 +427,7 @@ const CATEGORIAS_DEFAULT = [
 
 function CategoriasTab() {
   const [categorias, setCategorias] = useState([]);
+  const [categoriasReales, setCategoriasReales] = useState([]);
   const [guardando, setGuardando] = useState(false);
   const [msgOk, setMsgOk] = useState("");
   const [aviso, setAviso] = useState(null);
@@ -441,13 +442,18 @@ function CategoriasTab() {
         setCategorias(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       }
     });
+    getDocs(collection(db, "prendas")).then((snap) => {
+      const set = new Set();
+      snap.docs.forEach((d) => { const c = d.data().categoria; if (c) set.add(c); });
+      setCategoriasReales([...set].sort());
+    });
   }, []);
 
   const actualizar = (id, cambios) => setCategorias((cats) => cats.map((c) => (c.id === id ? { ...c, ...cambios } : c)));
 
   const agregar = () => {
     if (categorias.length >= 8) return avisar("Máximo 8 categorías");
-    setCategorias((cats) => [...cats, { id: `nueva-${Date.now()}`, nombre: "Nueva categoría", imagen: "", activa: true, orden: cats.length + 1 }]);
+    setCategorias((cats) => [...cats, { id: `nueva-${Date.now()}`, nombre: "", imagen: "", activa: true, orden: cats.length + 1 }]);
   };
 
   const eliminar = async (id) => {
@@ -462,6 +468,7 @@ function CategoriasTab() {
   };
 
   const guardarTodo = async () => {
+    if (categorias.some((c) => !c.nombre)) return avisar("Elegí una categoría para cada fila antes de guardar");
     setGuardando(true);
     try {
       for (const [i, cat] of categorias.entries()) {
@@ -486,15 +493,19 @@ function CategoriasTab() {
           {aviso}
         </div>
       )}
-      <p style={{ fontSize: 13, color: "#999", marginBottom: 20 }}>Máximo 8 · Los nombres deben coincidir exactamente con las categorías de tus prendas</p>
+      <p style={{ fontSize: 13, color: "#999", marginBottom: 20 }}>Máximo 8 · Elegí entre las categorías que ya usan tus prendas, así siempre coinciden</p>
 
       {categorias.map((c) => (
         <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: "white", borderRadius: 16, marginBottom: 10, border: c.activa ? "1px solid #F5E6EE" : "1px solid #eee", opacity: c.activa ? 1 : 0.5, transition: "all 0.2s ease" }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "2px solid #F5E6EE", background: "#FCE4EC", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {c.imagen ? <img src={c.imagen} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} alt="" /> : <span style={{ fontSize: 22 }}>👗</span>}
           </div>
-          <input value={c.nombre} onChange={(e) => actualizar(c.id, { nombre: e.target.value })}
-            style={{ flex: 1, padding: "10px 14px", borderRadius: 12, border: "1px solid #F5E6EE", fontSize: 14, fontWeight: 600, fontFamily: "inherit", outline: "none", background: "#FAFAFA", minWidth: 0 }} />
+          <select value={c.nombre} onChange={(e) => actualizar(c.id, { nombre: e.target.value })}
+            style={{ flex: 1, padding: "10px 14px", borderRadius: 12, border: "1px solid #F5E6EE", fontSize: 14, fontWeight: 600, fontFamily: "inherit", outline: "none", background: "#FAFAFA", minWidth: 0, cursor: "pointer" }}>
+            {!c.nombre && <option value="" disabled>Elegir categoría...</option>}
+            {categoriasReales.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+            {c.nombre && !categoriasReales.includes(c.nombre) && <option value={c.nombre}>{c.nombre} (sin prendas todavía)</option>}
+          </select>
           <label style={{ background: "#FCE4EC", color: "#C2185B", borderRadius: 10, padding: "8px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
             📷 Foto
             <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => subirImagen(c.id, e.target.files[0])} />
