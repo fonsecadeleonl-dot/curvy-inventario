@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { db, auth } from "../firebase";
-import { collection, addDoc, doc, updateDoc, deleteDoc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, deleteDoc, getDoc, setDoc, getDocs, query, orderBy, serverTimestamp } from "firebase/firestore";
 import { Icon, comprimirImagen, nombreDe, SOPORTA_WEBP } from "../utils.jsx";
 
 // ── compresor ancho, para banners (más resolución que las miniaturas normales) ──
@@ -631,6 +631,117 @@ function AlmacenamientoTab() {
   );
 }
 
+const CONFIG_OFERTAS_DEFAULT = { imagenBanner: "", imagenBannerMovil: "", altBanner: "", enlaceBanner: "" };
+
+function OfertasTab() {
+  const [config, setConfig] = useState(CONFIG_OFERTAS_DEFAULT);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [subiendoDesktop, setSubiendoDesktop] = useState(false);
+  const [subiendoMovil, setSubiendoMovil] = useState(false);
+  const [msgOk, setMsgOk] = useState("");
+  const [msgError, setMsgError] = useState("");
+  const inputDesktopRef = useRef();
+  const inputMovilRef = useRef();
+
+  const notificar = (msg, error = false) => {
+    if (error) { setMsgError(msg); setTimeout(() => setMsgError(""), 4000); }
+    else { setMsgOk(msg); setTimeout(() => setMsgOk(""), 3500); }
+  };
+
+  useEffect(() => {
+    getDoc(doc(db, "config", "ofertas"))
+      .then((snap) => { if (snap.exists()) setConfig((c) => ({ ...c, ...snap.data() })); })
+      .catch((e) => console.error("Error cargando config/ofertas:", e))
+      .finally(() => setCargando(false));
+  }, []);
+
+  const set = (campo, valor) => setConfig((c) => ({ ...c, [campo]: valor }));
+
+  const onArchivo = async (e, campo, setSubiendo) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSubiendo(true);
+    try { set(campo, await comprimirImagenAncha(file)); }
+    finally { setSubiendo(false); }
+  };
+
+  const guardar = async () => {
+    if (!auth.currentUser) { notificar("❌ Sin sesión activa. Recarga la página e inicia sesión.", true); return; }
+    if (!config.imagenBanner) { notificar("❌ Falta la imagen del banner.", true); return; }
+    if (!config.altBanner?.trim()) { notificar("❌ El texto alternativo es obligatorio (accesibilidad).", true); return; }
+    setGuardando(true);
+    try {
+      await setDoc(doc(db, "config", "ofertas"), { ...config, actualizadoEn: serverTimestamp(), actualizadoPor: auth.currentUser.uid }, { merge: true });
+      notificar("✅ ¡Banner de ofertas publicado!");
+    } catch (e) {
+      console.error("Error al guardar config/ofertas:", e.code, e.message);
+      const mensajes = {
+        "permission-denied": "❌ Sin permisos. Actualiza las reglas de Firestore.",
+        "unavailable": "❌ Sin conexión. Revisa tu internet.",
+        "unauthenticated": "❌ Sesión expirada. Recarga la página.",
+      };
+      notificar(mensajes[e.code] ?? `❌ Error: ${e.message}`, true);
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const botonSubir = { padding: "10px 18px", borderRadius: 12, background: "#FDF0F6", border: "1.5px dashed #C2185B", color: "#8B1A4D", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 };
+  const botonQuitar = { padding: "10px 14px", borderRadius: 12, background: "#FFEBEE", border: "none", color: "#C62828", fontWeight: 700, fontSize: 12, cursor: "pointer" };
+  const labelEstilo = { fontSize: 12, fontWeight: 700, color: "#7B4F6A", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 };
+
+  if (cargando) return <div style={{ textAlign: "center", padding: 60, color: "#9E7A8E" }}>Cargando...</div>;
+
+  return (
+    <div style={{ paddingBottom: 80 }}>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#1C0F17", margin: 0 }}>🔥 Banner de Ofertas</h2>
+        <p style={{ fontSize: 13, color: "#9E7A8E", marginTop: 4 }}>Imagen de ancho completo arriba de "Ofertas de la Semana" en el home. Sin imagen cargada, la sección se ve sin banner.</p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div>
+          <label style={labelEstilo}>📷 Imagen desktop</label>
+          <p style={{ fontSize: 11, color: "#9E7A8E", margin: "0 0 10px" }}>Banner ancho, ej. 1920×550px</p>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <button onClick={() => inputDesktopRef.current?.click()} disabled={subiendoDesktop} style={botonSubir}>
+              <Icon name="image" size={15} /> {subiendoDesktop ? "Procesando..." : config.imagenBanner ? "Cambiar imagen" : "Subir imagen"}
+            </button>
+            {config.imagenBanner && <button onClick={() => set("imagenBanner", "")} style={botonQuitar}>Quitar imagen</button>}
+          </div>
+          <input ref={inputDesktopRef} type="file" accept="image/*" onChange={(e) => onArchivo(e, "imagenBanner", setSubiendoDesktop)} style={{ display: "none" }} />
+          {config.imagenBanner && <img src={config.imagenBanner} alt="" style={{ width: "100%", maxHeight: 160, objectFit: "cover", borderRadius: 12, marginTop: 12 }} />}
+        </div>
+
+        <div>
+          <label style={labelEstilo}>📱 Imagen móvil (opcional)</label>
+          <p style={{ fontSize: 11, color: "#9E7A8E", margin: "0 0 10px" }}>Si no la subes, se usa la de desktop</p>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <button onClick={() => inputMovilRef.current?.click()} disabled={subiendoMovil} style={botonSubir}>
+              <Icon name="image" size={15} /> {subiendoMovil ? "Procesando..." : config.imagenBannerMovil ? "Cambiar imagen" : "Subir imagen"}
+            </button>
+            {config.imagenBannerMovil && <button onClick={() => set("imagenBannerMovil", "")} style={botonQuitar}>Quitar imagen</button>}
+          </div>
+          <input ref={inputMovilRef} type="file" accept="image/*" onChange={(e) => onArchivo(e, "imagenBannerMovil", setSubiendoMovil)} style={{ display: "none" }} />
+          {config.imagenBannerMovil && <img src={config.imagenBannerMovil} alt="" style={{ width: 200, maxHeight: 200, objectFit: "cover", borderRadius: 12, marginTop: 12 }} />}
+        </div>
+
+        <CampoTexto label="♿ Texto alternativo (obligatorio)" valor={config.altBanner} onChange={(v) => set("altBanner", v)} placeholder="ej: Ofertas de la semana hasta 40% off" />
+        <CampoTexto label="🔗 Enlace al hacer clic (opcional)" valor={config.enlaceBanner} onChange={(v) => set("enlaceBanner", v)} placeholder="https://..." />
+
+        <button onClick={guardar} disabled={guardando || subiendoDesktop || subiendoMovil}
+          style={{ padding: 14, borderRadius: 14, background: guardando ? "#ccc" : "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "#fff", border: "none", fontSize: 15, fontWeight: 700, cursor: guardando ? "not-allowed" : "pointer" }}>
+          {guardando ? "⏳ Guardando..." : "🚀 Guardar y publicar"}
+        </button>
+      </div>
+
+      <Toast msg={msgOk} />
+      <Toast msg={msgError} error />
+    </div>
+  );
+}
+
 export default function Configuracion() {
   const [tab, setTab] = useState("banner");
   const botonEstilo = (activo) => ({
@@ -649,11 +760,13 @@ export default function Configuracion() {
 
       <div style={{ display: "flex", gap: 8, marginBottom: 28, background: "#F5F5F5", padding: 4, borderRadius: 14, flexWrap: "wrap" }}>
         <button onClick={() => setTab("banner")} style={botonEstilo(tab === "banner")}>🖼️ Banner</button>
+        <button onClick={() => setTab("ofertas")} style={botonEstilo(tab === "ofertas")}>🔥 Ofertas</button>
         <button onClick={() => setTab("categorias")} style={botonEstilo(tab === "categorias")}>🎨 Categorías</button>
         <button onClick={() => setTab("almacenamiento")} style={botonEstilo(tab === "almacenamiento")}>📊 Almacenamiento</button>
       </div>
 
       {tab === "banner" && <BannerTab />}
+      {tab === "ofertas" && <OfertasTab />}
       {tab === "categorias" && <CategoriasTab />}
       {tab === "almacenamiento" && <AlmacenamientoTab />}
     </div>

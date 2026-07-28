@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { db } from "../firebase";
-import { collection, getDocs, addDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, getDoc, query, where, orderBy, serverTimestamp } from "firebase/firestore";
 import { fmt, Icon, nombreDe, ofertaVigente, precioEfectivo, diasParaVencer, porcentajeDescuento } from "../utils.jsx";
 
 const NUMERO_WA = "573017886206";
@@ -752,6 +752,113 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
   );
 }
 
+/* ── TARJETA EDITORIAL — SOLO "Ofertas de la Semana" (home + ver todas) ─ */
+function BarraProgresoFotos({ cantidad, activo = 0 }) {
+  if (cantidad <= 1) return null;
+  return (
+    <div style={{ display: "flex", gap: 3, padding: "6px 1px 0" }}>
+      {Array.from({ length: cantidad }).map((_, i) => (
+        <span key={i} style={{ flex: 1, height: 2.5, borderRadius: 2, background: i === activo ? "#8B1A4A" : "#FCE8EF", transition: "background 200ms ease" }} />
+      ))}
+    </div>
+  );
+}
+
+function TarjetaOfertaEditorial({ p, onClick }) {
+  const imagenes = p.imagenes?.length ? p.imagenes : (p.imagen ? [p.imagen] : []);
+  const [indiceImg, setIndiceImg] = useState(0);
+  const [hoverActivo, setHoverActivo] = useState(false);
+  const touchRef = useRef({ x: 0 });
+  // Mismo patrón de hover/swipe que ProductoTarjetaGrid: hover en desktop asoma la 2da foto, swipe en mobile recorre todas.
+  const indiceMostrado = hoverActivo && indiceImg === 0 && imagenes.length > 1 ? 1 : indiceImg;
+
+  const onTouchStart = (e) => { touchRef.current.x = e.touches[0].clientX; };
+  const onTouchEnd = (e) => {
+    const delta = touchRef.current.x - e.changedTouches[0].clientX;
+    if (Math.abs(delta) < 35) return;
+    setIndiceImg((i) => Math.min(imagenes.length - 1, Math.max(0, i + (delta > 0 ? 1 : -1))));
+  };
+
+  return (
+    <div onClick={onClick} className="tarjeta-hover" style={{ background: "#fff", cursor: "pointer" }}>
+      <div style={{ position: "relative", width: "100%", paddingTop: "125%", overflow: "hidden", borderRadius: 6, background: "#FAFAFA", touchAction: "pan-y" }}
+        onMouseEnter={() => setHoverActivo(true)} onMouseLeave={() => setHoverActivo(false)}
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        {imagenes.length > 0 ? imagenes.map((src, i) => (
+          <img key={i} src={src} alt={p.categoria || nombreDe(p)} loading="lazy" decoding="async"
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", opacity: i === indiceMostrado ? 1 : 0, transition: "opacity 250ms ease", pointerEvents: "none" }} />
+        )) : (
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🪡</div>
+        )}
+      </div>
+      <BarraProgresoFotos cantidad={imagenes.length} activo={indiceMostrado} />
+      <div style={{ padding: "10px 1px 0" }}>
+        <span style={{ fontSize: 10, color: "#8A8A8A", textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>{p.categoria}</span>
+        <p style={{ margin: "4px 0 0" }}><PrecioConOferta p={p} fontSize={15} colorBase="#8B1A4A" compacto /></p>
+      </div>
+    </div>
+  );
+}
+
+function useEsMovil(breakpoint = 767) {
+  const [esMovil, setEsMovil] = useState(() => window.matchMedia(`(max-width: ${breakpoint}px)`).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
+    const onChange = (e) => setEsMovil(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [breakpoint]);
+  return esMovil;
+}
+
+// Mide el archivo real (no un valor fijo) para poder poner width/height en el <img>
+// y que el navegador reserve el alto correcto desde el primer render, sin salto de layout.
+function useDimensionesImagen(src) {
+  const [dim, setDim] = useState(null);
+  useEffect(() => {
+    setDim(null);
+    if (!src) return undefined;
+    let vigente = true;
+    const img = new Image();
+    img.onload = () => { if (vigente) setDim({ w: img.naturalWidth, h: img.naturalHeight }); };
+    img.src = src;
+    return () => { vigente = false; };
+  }, [src]);
+  return dim;
+}
+
+function BannerOfertas({ banner }) {
+  const esMovil = useEsMovil(767);
+  const src = (esMovil && banner?.imagenBannerMovil) || banner?.imagenBanner;
+  const dim = useDimensionesImagen(src);
+  if (!src) return null;
+
+  const contenido = (
+    <img src={src} alt={banner.altBanner || ""} loading="lazy" width={dim?.w} height={dim?.h}
+      style={{ width: "100%", height: "auto", display: "block" }} />
+  );
+  return banner.enlaceBanner
+    ? <a href={banner.enlaceBanner} className="of-banner">{contenido}</a>
+    : <div className="of-banner">{contenido}</div>;
+}
+
+function SeccionOfertasGrid({ prendas, banner, onCardClick, onVerTodas, verTodasTexto = "Ver todas las ofertas →" }) {
+  if (!prendas.length) return null;
+  const hayBanner = !!banner?.imagenBanner;
+  return (
+    <section style={{ padding: "0 0 28px", background: "linear-gradient(135deg, #FCE8EF 0%, #FBEFF3 100%)" }}>
+      <BannerOfertas banner={banner} />
+      <div className="of-gutter" style={{ paddingTop: hayBanner ? 28 : 40, paddingBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", fontWeight: 700, color: "#1C0F17", margin: 0 }}>Ofertas de la Semana 🔥</h2>
+        {onVerTodas && <button onClick={onVerTodas} style={{ background: "none", border: "none", color: "#C2185B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline", textDecorationColor: "#F5C6D8", flexShrink: 0, marginTop: 4 }}>{verTodasTexto}</button>}
+      </div>
+      <div className="of-editorial-grid of-gutter">
+        {prendas.map((p) => <TarjetaOfertaEditorial key={p.id} p={p} onClick={() => onCardClick(p)} />)}
+      </div>
+    </section>
+  );
+}
+
 /* ── BOTÓN WHATSAPP FLOTANTE ─────────────────────────── */
 function BotonWhatsappFlotante() {
   const [visible, setVisible] = useState(false);
@@ -1431,6 +1538,7 @@ export default function CatalogoPublico() {
   const [liked, setLiked] = useState(new Set());
   const [categoriasFS, setCategoriasFS] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
+  const [configOfertas, setConfigOfertas] = useState(null);
   const [ordenActivo, setOrdenActivo] = useState("recientes");
   const [mostrarCatalogo, setMostrarCatalogo] = useState(false);
   const [cantidadVisible, setCantidadVisible] = useState(12);
@@ -1456,6 +1564,12 @@ export default function CatalogoPublico() {
     }
   }, [prendas]);
 
+  // Deep-link: ?categoria=ofertas (o cualquier otra) abre el catálogo ya filtrado
+  useEffect(() => {
+    const cat = new URLSearchParams(window.location.search).get("categoria");
+    if (cat) irACatalogo(cat);
+  }, []);
+
   // Sincroniza con el botón atrás/adelante del navegador
   useEffect(() => {
     const onPop = () => {
@@ -1470,6 +1584,13 @@ export default function CatalogoPublico() {
     getDocs(collection(db, "categorias")).then((snap) => {
       setCategoriasFS(snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden ?? 99) - (b.orden ?? 99)));
     });
+  }, []);
+
+  // Banner editable de "Ofertas de la Semana"; si el doc no existe o no tiene imagen, la sección no lo muestra.
+  useEffect(() => {
+    getDoc(doc(db, "config", "ofertas")).then((snap) => {
+      if (snap.exists()) setConfigOfertas(snap.data());
+    }).catch((error) => console.error("No se pudo leer config/ofertas:", error));
   }, []);
 
   useEffect(() => {
@@ -1553,12 +1674,18 @@ export default function CatalogoPublico() {
   const todasConFoto = useMemo(() => prendas.filter(tieneImagen), [prendas]);
   const recientes = useMemo(() => [...todasConFoto].sort((a, b) => fechaCreacion(b) - fechaCreacion(a)).slice(0, 12), [todasConFoto]);
   const masPedidas = todasConFoto.slice(0, 3);
+  // Home: solo las 4 prendas de mayor descuento (el catálogo filtrado "ofertas" sí muestra todas)
   const enOfertas = useMemo(() => todasConFoto.filter(ofertaVigente)
     .sort((a, b) => (1 - Number(a.precioOferta) / Number(a.precioVenta)) < (1 - Number(b.precioOferta) / Number(b.precioVenta)) ? 1 : -1)
-    .slice(0, 14), [todasConFoto]);
+    .slice(0, 4), [todasConFoto]);
   const paraInstagram = todasConFoto.slice(0, 6);
 
-  const irACatalogo = () => {
+  const irACatalogo = (cat) => {
+    if (cat) {
+      setCategoriaActiva(cat);
+      setOrdenActivo("recientes");
+      setTallasActivas([]);
+    }
     setMostrarCatalogo(true);
     setTimeout(() => document.getElementById("catalogo-section")?.scrollIntoView({ behavior: "smooth" }), 100);
   };
@@ -1592,6 +1719,8 @@ export default function CatalogoPublico() {
 
       <SeccionCarrusel title="🌸 Lo Más Nuevo" subtitle="Prendas recién agregadas para ti" prendas={recientes} bg="#FAF7F4" onCardClick={abrirProducto} onVerTodas={irACatalogo} />
 
+      <SeccionOfertasGrid prendas={enOfertas} banner={configOfertas} onCardClick={abrirProducto} onVerTodas={() => irACatalogo("ofertas")} />
+
       <SeccionCategorias prendas={prendas} categoriaSel={categoriaActiva} onSelect={(c) => { setCategoriaActiva(c); setTallasActivas([]); }} onVerCatalogo={irACatalogo} categoriasFS={categoriasFS} />
 
       {mostrarCatalogo && (
@@ -1607,9 +1736,11 @@ export default function CatalogoPublico() {
               </div>
             ) : (
               <>
-                <div className="catalogo-grid">
+                <div className={categoriaActiva === "ofertas" ? "of-editorial-grid of-gutter" : "catalogo-grid"}>
                   {ordenadas.slice(0, cantidadVisible).map((p) => (
-                    <ProductoTarjetaGrid key={p.id} p={p} liked={liked.has(p.id)} onToggleLike={toggleLike} onClick={() => abrirProducto(p)} />
+                    categoriaActiva === "ofertas"
+                      ? <TarjetaOfertaEditorial key={p.id} p={p} onClick={() => abrirProducto(p)} />
+                      : <ProductoTarjetaGrid key={p.id} p={p} liked={liked.has(p.id)} onToggleLike={toggleLike} onClick={() => abrirProducto(p)} />
                   ))}
                 </div>
                 {cargandoMas && (
@@ -1629,7 +1760,6 @@ export default function CatalogoPublico() {
 
       <SeccionMasPedidas prendas={masPedidas} onCardClick={abrirProducto} />
       <SeccionCTA onVerCatalogo={irACatalogo} />
-      <SeccionCarrusel title="Ofertas de la Semana 🔥" prendas={enOfertas} bg="linear-gradient(135deg, #FCE8EF 0%, #FBEFF3 100%)" onCardClick={abrirProducto} onVerTodas={irACatalogo} />
       <SeccionInstagram fotos={paraInstagram} />
       <Footer />
       <BotonWhatsappFlotante />
@@ -1644,6 +1774,16 @@ export default function CatalogoPublico() {
         @media (min-width: 640px) { .catalogo-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (min-width: 1024px) { .catalogo-grid { grid-template-columns: repeat(4, 1fr); padding: 24px 32px; } }
         @media (min-width: 1400px) { .catalogo-grid { grid-template-columns: repeat(5, 1fr); } }
+
+        /* Grid exclusivo de "Ofertas de la Semana": fijo 2 (mobile) / 4 (desktop), sin auto-fill/minmax, sin max-width que la encoja */
+        .of-editorial-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px 16px; padding-bottom: 8px; }
+        @media (min-width: 768px) { .of-editorial-grid { grid-template-columns: repeat(4, 1fr); gap: 32px 24px; } }
+
+        /* Padding lateral compartido entre encabezado y grilla de ofertas, para que queden alineados entre sí */
+        .of-gutter { padding-left: 16px; padding-right: 16px; }
+        @media (min-width: 768px) { .of-gutter { padding-left: 32px; padding-right: 32px; } }
+
+        .of-banner { display: block; width: 100%; text-decoration: none; }
 
         .skeleton { background: linear-gradient(90deg, #F5E6EE 25%, #FCE4EC 37%, #F5E6EE 63%); background-size: 400% 100%; animation: skeleton-loading 1.4s ease infinite; }
         @keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
