@@ -17,7 +17,7 @@ const fechaCreacion = (p) => (p.creadoEn?.toDate ? p.creadoEn.toDate() : new Dat
 const waLink = (texto) => `https://api.whatsapp.com/send?phone=${NUMERO_WA}&text=${encodeURIComponent(texto)}`;
 
 /* ── PRECIO CON OFERTA (oferta grande + badge -X% + tachado) ─ */
-function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, colorBase = "#8B1A4D", oscuro = false, compacto = false, etiqueta = null }) {
+function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, colorBase = "#8B1A4D", oscuro = false, compacto = false, etiqueta = null, mostrarContador = true }) {
   const colorEtiqueta = oscuro ? "rgba(255,255,255,0.85)" : "#888";
   if (!ofertaVigente(p)) return (
     <span style={{ display: "inline-flex", alignItems: "baseline", gap: 8 }}>
@@ -35,7 +35,7 @@ function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, colorBase = "#8B1
         <span className={compacto ? "po-badge" : undefined} style={{ fontSize: Math.max(9, Math.round(fontSize * 0.5)), fontWeight: 700, color: oscuro ? "#fff" : "#8B1A4A", background: oscuro ? "rgba(255,255,255,0.2)" : "#FCE8EF", padding: "2px 7px", borderRadius: 10, whiteSpace: "nowrap" }}>-{pct}%</span>
         <span className={compacto ? "po-tachado" : undefined} style={{ fontSize: Math.round(fontSize * 0.65), fontWeight: 500, color: oscuro ? "rgba(255,255,255,0.65)" : "#9CA3AF", textDecoration: "line-through", whiteSpace: "nowrap" }}>{fmt(p.precioVenta)}</span>
       </span>
-      {dias !== null && (
+      {mostrarContador && dias !== null && (
         <span style={{ display: "block", fontSize: 11, fontWeight: 600, color: oscuro ? "rgba(255,255,255,0.75)" : "#B0455E" }}>
           {dias === 0 ? "Termina hoy" : dias === 1 ? "Termina en 1 día" : `Termina en ${dias} días`}
         </span>
@@ -396,124 +396,6 @@ function HeroCarousel({ slides, onVerCatalogo }) {
   );
 }
 
-/* ── CARRUSEL DE PRODUCTOS (reutilizable) ───────────── */
-const ANCHO_TARJETA = 184;
-
-function useAutoScroll(ref, intervalo = 5000) {
-  useEffect(() => {
-    let pausado = false, intervalId;
-    const inicio = setTimeout(() => {
-      const el = ref.current;
-      if (!el) return;
-      const avanzar = () => {
-        if (pausado) return;
-        if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) el.scrollTo({ left: 0, behavior: "smooth" });
-        else el.scrollBy({ left: ANCHO_TARJETA, behavior: "smooth" });
-      };
-      const pausar = () => { pausado = true; setTimeout(() => { pausado = false; }, 8000); };
-      intervalId = setInterval(avanzar, intervalo);
-      el.addEventListener("touchstart", pausar, { passive: true });
-      el.addEventListener("mouseenter", pausar);
-      el.addEventListener("mouseleave", () => { pausado = false; });
-    }, 800);
-    return () => { clearTimeout(inicio); clearInterval(intervalId); };
-  }, []);
-}
-
-function useSwipeScroll(ref) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let inicioX = 0;
-    const onStart = (e) => { inicioX = e.touches[0].clientX; };
-    const onEnd = (e) => {
-      const delta = inicioX - e.changedTouches[0].clientX;
-      if (Math.abs(delta) > 30) el.scrollBy({ left: delta > 0 ? ANCHO_TARJETA : -ANCHO_TARJETA, behavior: "smooth" });
-    };
-    el.addEventListener("touchstart", onStart, { passive: true });
-    el.addEventListener("touchend", onEnd, { passive: true });
-    return () => { el.removeEventListener("touchstart", onStart); el.removeEventListener("touchend", onEnd); };
-  }, []);
-}
-
-function SeccionCarrusel({ title, subtitle, prendas, bg = "#fff", onCardClick, onVerTodas }) {
-  const ref = useRef(null);
-  const [scrollIdx, setScrollIdx] = useState(0);
-  const [totalPaginas, setTotalPaginas] = useState(1);
-  const [anchoTarjeta, setAnchoTarjeta] = useState(ANCHO_TARJETA);
-
-  useAutoScroll(ref, 5000);
-  useSwipeScroll(ref);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const recalcular = () => {
-      const ancho = el.children[0] ? el.children[0].getBoundingClientRect().width + 14 : ANCHO_TARJETA;
-      setAnchoTarjeta(ancho);
-      setTotalPaginas(Math.max(1, Math.ceil((el.scrollWidth - el.clientWidth) / ancho) + 1));
-    };
-    const t = setTimeout(recalcular, 60);
-    window.addEventListener("resize", recalcular);
-    return () => { clearTimeout(t); window.removeEventListener("resize", recalcular); };
-  }, [prendas.length]);
-
-  if (!prendas.length) return null;
-
-  const dotsVisibles = Math.min(totalPaginas, 4);
-  const dotsInicio = Math.max(0, Math.min(scrollIdx - 2, totalPaginas - 4));
-
-  return (
-    <section style={{ padding: "40px 0 28px", background: bg }}>
-      <div style={{ padding: "0 20px 16px", maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", fontWeight: 700, color: "#1C0F17", margin: 0 }}>{title}</h2>
-            {subtitle && <p style={{ color: "#7B4F6A", fontSize: 12, margin: "4px 0 0", letterSpacing: 0.5, textTransform: "uppercase", fontWeight: 600 }}>{subtitle}</p>}
-          </div>
-          {onVerTodas && <button onClick={onVerTodas} style={{ background: "none", border: "none", color: "#C2185B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline", textDecorationColor: "#F5C6D8", flexShrink: 0, marginTop: 4 }}>Ver todas →</button>}
-        </div>
-      </div>
-      <div style={{ position: "relative" }}>
-        <button onClick={() => ref.current?.scrollBy({ left: -anchoTarjeta * 2, behavior: "smooth" })} style={{ position: "absolute", left: 4, top: "40%", zIndex: 5, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "1px solid #F3E4EF", cursor: "pointer", fontSize: 16 }}>‹</button>
-        <div ref={ref} className="no-scrollbar carrusel-track" onScroll={(e) => setScrollIdx(Math.round(e.target.scrollLeft / anchoTarjeta))}
-          style={{ overflowX: "auto", padding: "4px 20px 16px", display: "flex", gap: 14, justifyContent: totalPaginas === 1 ? "center" : "flex-start" }}>
-          {prendas.map((p) => {
-            const img = p.imagenes?.[0] || p.imagen;
-            return (
-              <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover carrusel-card" style={{ flexShrink: 0, width: 170, background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 16px rgba(136,14,79,0.08)", border: "1px solid #F3E4EF", cursor: "pointer", display: "flex", flexDirection: "column" }}>
-                <div className="img-hover-wrap" style={{ position: "relative", aspectRatio: "3/4", background: "#FDF0F6", overflow: "hidden" }}>
-                  {img ? <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }} />
-                    : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="image" size={28} color="#E0B8D0" /></div>}
-                  <BadgeDescuentoFoto p={p} />
-                  <DotsFotos cantidad={p.imagenes?.length || 0} />
-                </div>
-                <div style={{ padding: "10px 12px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "#1C0F17", margin: "0 0 4px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.3, flex: 1 }}>{nombreDe(p)}</p>
-                  <p style={{ margin: "0 0 8px" }}><PrecioConOferta p={p} fontSize={15} colorBase="#8B1A4D" compacto /></p>
-                  <button onClick={(e) => { e.stopPropagation(); onCardClick(p); }} style={{ width: "100%", padding: "7px 0", borderRadius: 12, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Ver prenda →</button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <button onClick={() => ref.current?.scrollBy({ left: anchoTarjeta * 2, behavior: "smooth" })} style={{ position: "absolute", right: 4, top: "40%", zIndex: 5, width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "1px solid #F3E4EF", cursor: "pointer", fontSize: 16 }}>›</button>
-      </div>
-      {totalPaginas > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 4, paddingBottom: 8 }}>
-          {Array.from({ length: dotsVisibles }).map((_, r) => {
-            const idx = dotsInicio + r;
-            const activo = idx === scrollIdx;
-            const chico = totalPaginas > 4 && ((r === 0 && dotsInicio > 0) || (r === dotsVisibles - 1 && dotsInicio + dotsVisibles < totalPaginas));
-            return <div key={idx} onClick={() => ref.current?.scrollTo({ left: idx * anchoTarjeta, behavior: "smooth" })}
-              style={{ width: activo ? 20 : chico ? 4 : 6, height: chico ? 4 : 6, borderRadius: 3, background: activo ? "#C2185B" : "#F5C6D8", transition: "all 0.3s ease", cursor: "pointer", alignSelf: "center" }} />;
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
-
 /* ── SECCIÓN CATEGORÍAS ─────────────────────────────── */
 function SeccionCategorias({ prendas, onSelect, onVerCatalogo, categoriasFS }) {
   const imagenPara = (cat) => {
@@ -764,7 +646,7 @@ function BarraProgresoFotos({ cantidad, activo = 0 }) {
   );
 }
 
-function TarjetaOfertaEditorial({ p, onClick }) {
+function TarjetaEditorial({ p, onClick, mostrarNombre = false, mostrarContador = true }) {
   const imagenes = p.imagenes?.length ? p.imagenes : (p.imagen ? [p.imagen] : []);
   const [indiceImg, setIndiceImg] = useState(0);
   const [hoverActivo, setHoverActivo] = useState(false);
@@ -780,8 +662,8 @@ function TarjetaOfertaEditorial({ p, onClick }) {
   };
 
   return (
-    <div onClick={onClick} className="tarjeta-hover" style={{ background: "#fff", cursor: "pointer" }}>
-      <div style={{ position: "relative", width: "100%", paddingTop: "125%", overflow: "hidden", borderRadius: 6, background: "#FAFAFA", touchAction: "pan-y" }}
+    <div onClick={onClick} className="tarjeta-hover" style={{ cursor: "pointer" }}>
+      <div style={{ position: "relative", width: "100%", paddingTop: "125%", overflow: "hidden", background: "#FAFAFA", touchAction: "pan-y" }}
         onMouseEnter={() => setHoverActivo(true)} onMouseLeave={() => setHoverActivo(false)}
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {imagenes.length > 0 ? imagenes.map((src, i) => (
@@ -794,7 +676,10 @@ function TarjetaOfertaEditorial({ p, onClick }) {
       <BarraProgresoFotos cantidad={imagenes.length} activo={indiceMostrado} />
       <div style={{ padding: "10px 1px 0" }}>
         <span style={{ fontSize: 10, color: "#8A8A8A", textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>{p.categoria}</span>
-        <p style={{ margin: "4px 0 0" }}><PrecioConOferta p={p} fontSize={15} colorBase="#8B1A4A" compacto /></p>
+        {mostrarNombre && (
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", margin: "4px 0 0", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
+        )}
+        <p style={{ margin: "4px 0 0" }}><PrecioConOferta p={p} fontSize={15} colorBase="#8B1A4A" compacto mostrarContador={mostrarContador} /></p>
       </div>
     </div>
   );
@@ -842,18 +727,18 @@ function BannerOfertas({ banner }) {
     : <div className="of-banner">{contenido}</div>;
 }
 
-function SeccionOfertasGrid({ prendas, banner, onCardClick, onVerTodas, verTodasTexto = "Ver todas las ofertas →" }) {
+function SeccionGridEditorial({ titulo, prendas, banner, bg = "#FAF7F4", onCardClick, onVerTodas, verTodasTexto = "Ver todas →", mostrarNombre = false, mostrarContador = true }) {
   if (!prendas.length) return null;
   const hayBanner = !!banner?.imagenBanner;
   return (
-    <section style={{ padding: "0 0 28px", background: "linear-gradient(135deg, #FCE8EF 0%, #FBEFF3 100%)" }}>
+    <section style={{ padding: "0 0 28px", background: bg }}>
       <BannerOfertas banner={banner} />
       <div className="of-gutter" style={{ paddingTop: hayBanner ? 28 : 40, paddingBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", fontWeight: 700, color: "#1C0F17", margin: 0 }}>Ofertas de la Semana 🔥</h2>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", fontWeight: 700, color: "#1C0F17", margin: 0 }}>{titulo}</h2>
         {onVerTodas && <button onClick={onVerTodas} style={{ background: "none", border: "none", color: "#C2185B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline", textDecorationColor: "#F5C6D8", flexShrink: 0, marginTop: 4 }}>{verTodasTexto}</button>}
       </div>
       <div className="of-editorial-grid of-gutter">
-        {prendas.map((p) => <TarjetaOfertaEditorial key={p.id} p={p} onClick={() => onCardClick(p)} />)}
+        {prendas.map((p) => <TarjetaEditorial key={p.id} p={p} onClick={() => onCardClick(p)} mostrarNombre={mostrarNombre} mostrarContador={mostrarContador} />)}
       </div>
     </section>
   );
@@ -1672,7 +1557,7 @@ export default function CatalogoPublico() {
   };
 
   const todasConFoto = useMemo(() => prendas.filter(tieneImagen), [prendas]);
-  const recientes = useMemo(() => [...todasConFoto].sort((a, b) => fechaCreacion(b) - fechaCreacion(a)).slice(0, 12), [todasConFoto]);
+  const recientes = useMemo(() => [...todasConFoto].sort((a, b) => fechaCreacion(b) - fechaCreacion(a)).slice(0, 4), [todasConFoto]);
   const masPedidas = todasConFoto.slice(0, 3);
   // Home: solo las 4 prendas de mayor descuento (el catálogo filtrado "ofertas" sí muestra todas)
   const enOfertas = useMemo(() => todasConFoto.filter(ofertaVigente)
@@ -1717,9 +1602,9 @@ export default function CatalogoPublico() {
 
       <HeroCarousel slides={heroSlides} onVerCatalogo={irACatalogo} />
 
-      <SeccionCarrusel title="🌸 Lo Más Nuevo" subtitle="Prendas recién agregadas para ti" prendas={recientes} bg="#FAF7F4" onCardClick={abrirProducto} onVerTodas={irACatalogo} />
+      <SeccionGridEditorial titulo="🌸 Lo Más Nuevo" prendas={recientes} onCardClick={abrirProducto} onVerTodas={irACatalogo} mostrarNombre mostrarContador={false} />
 
-      <SeccionOfertasGrid prendas={enOfertas} banner={configOfertas} onCardClick={abrirProducto} onVerTodas={() => irACatalogo("ofertas")} />
+      <SeccionGridEditorial titulo="Ofertas de la Semana 🔥" prendas={enOfertas} banner={configOfertas} bg="linear-gradient(135deg, #FCE8EF 0%, #FBEFF3 100%)" onCardClick={abrirProducto} onVerTodas={() => irACatalogo("ofertas")} verTodasTexto="Ver todas las ofertas →" />
 
       <SeccionCategorias prendas={prendas} categoriaSel={categoriaActiva} onSelect={(c) => { setCategoriaActiva(c); setTallasActivas([]); }} onVerCatalogo={irACatalogo} categoriasFS={categoriasFS} />
 
@@ -1739,7 +1624,7 @@ export default function CatalogoPublico() {
                 <div className={categoriaActiva === "ofertas" ? "of-editorial-grid of-gutter" : "catalogo-grid"}>
                   {ordenadas.slice(0, cantidadVisible).map((p) => (
                     categoriaActiva === "ofertas"
-                      ? <TarjetaOfertaEditorial key={p.id} p={p} onClick={() => abrirProducto(p)} />
+                      ? <TarjetaEditorial key={p.id} p={p} onClick={() => abrirProducto(p)} />
                       : <ProductoTarjetaGrid key={p.id} p={p} liked={liked.has(p.id)} onToggleLike={toggleLike} onClick={() => abrirProducto(p)} />
                   ))}
                 </div>
@@ -1817,12 +1702,6 @@ export default function CatalogoPublico() {
           .tarjeta-hover:hover img { transform: scale(1.04); }
         }
 
-        .carrusel-track { scroll-snap-type: x mandatory; scroll-padding-left: 20px; }
-        .carrusel-card { scroll-snap-align: start; }
-        @media (min-width: 768px) {
-          .carrusel-track { gap: 20px !important; max-width: 1400px; margin: 0 auto; }
-          .carrusel-card { width: 280px !important; }
-        }
         @media (max-width: 480px) {
           .precio-oferta-linea { gap: 5px !important; }
           .po-num { font-size: 13px !important; }
