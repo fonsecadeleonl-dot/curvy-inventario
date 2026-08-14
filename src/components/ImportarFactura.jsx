@@ -63,6 +63,27 @@ async function pdfPaginaABase64(file) {
   return canvas.toDataURL("image/png").split(",")[1];
 }
 
+function extraerJSONArray(texto) {
+  const inicio = texto.indexOf("[");
+  if (inicio === -1) return null;
+  let profundidad = 0;
+  let dentroString = false;
+  let escape = false;
+  for (let i = inicio; i < texto.length; i++) {
+    const c = texto[i];
+    if (escape) { escape = false; continue; }
+    if (c === "\\") { escape = true; continue; }
+    if (c === '"') { dentroString = !dentroString; continue; }
+    if (dentroString) continue;
+    if (c === "[") profundidad++;
+    else if (c === "]") {
+      profundidad--;
+      if (profundidad === 0) return texto.slice(inicio, i + 1);
+    }
+  }
+  return null;
+}
+
 async function llamarGroq(base64, mediaType = "image/png") {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -71,7 +92,7 @@ async function llamarGroq(base64, mediaType = "image/png") {
       "authorization": `Bearer ${GROQ_KEY}`
     },
     body: JSON.stringify({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "qwen/qwen3.6-27b",
       temperature: 0.1,
       max_tokens: 2048,
       messages: [{
@@ -90,7 +111,7 @@ async function llamarGroq(base64, mediaType = "image/png") {
   const data = await res.json();
   const texto = data.choices?.[0]?.message?.content?.trim();
   if (!texto) throw new Error("Groq no devolvió respuesta");
-  const jsonStr = texto.startsWith("[") ? texto : texto.match(/\[[\s\S]*\]/)?.[0];
+  const jsonStr = extraerJSONArray(texto);
   if (!jsonStr) throw new Error("La IA no devolvió JSON válido");
   return JSON.parse(jsonStr);
 }
