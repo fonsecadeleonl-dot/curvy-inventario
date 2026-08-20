@@ -14,7 +14,8 @@ import Configuracion from "./components/Configuracion.jsx";
 
 export default function App() {
   const [usuario, setUsuario] = useState(undefined);
-  const [tab, setTab] = useState("inicio"); 
+  const [tab, setTab] = useState("inicio");
+  const [filtroInventarioInicial, setFiltroInventarioInicial] = useState(null);
   const [prendas, setPrendas] = useState([]); 
   const [ventas, setVentas] = useState([]);
   const [facturas, setFacturas] = useState([]); 
@@ -96,8 +97,8 @@ export default function App() {
           </div>
 
           {tab === "inicio"     && <Inicio prendas={prendas} ventas={ventas} facturas={facturas} setFacturas={setFacturas} />}
-          {tab === "dashboard"  && <Dashboard prendas={prendas} ventas={ventas} facturas={facturas} />}
-          {tab === "inventario" && <Inventario prendas={prendas} setPrendas={setPrendas} />}
+          {tab === "dashboard"  && <Dashboard prendas={prendas} ventas={ventas} facturas={facturas} onIrAInventario={(categoria) => { setFiltroInventarioInicial({ categoria, ts: Date.now() }); setTab("inventario"); }} />}
+          {tab === "inventario" && <Inventario prendas={prendas} setPrendas={setPrendas} filtroInicial={filtroInventarioInicial} />}
           {tab === "ventas"     && <Ventas prendas={prendas} setPrendas={setPrendas} ventas={ventas} setVentas={setVentas} facturas={facturas} setFacturas={setFacturas} />}
           {tab === "configuracion" && <Configuracion />}
         </div>

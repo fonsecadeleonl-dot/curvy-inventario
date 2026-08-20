@@ -4,20 +4,20 @@ import { collection, getDocs, addDoc, doc, getDoc, query, where, orderBy, server
 import { fmt, Icon, nombreDe, ofertaVigente, precioEfectivo, diasParaVencer, porcentajeDescuento } from "../utils.jsx";
 
 const NUMERO_WA = "573017886206";
-const ORDEN_TALLAS = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
-const TALLAS_FILTRO = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL"];
-const TALLAS_PLUS = ["0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
+const ORDEN_TALLAS = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"];
+const TALLAS_FILTRO = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"];
+const TALLAS_PLUS = ["XL", "2XL", "3XL", "4XL"];
 const CATEGORIAS_BASE = ["Vestido", "Blusa", "Falda", "Conjunto"];
 const IG_URL = "https://www.instagram.com/curvy.vup/";
 const IG_HANDLE = "@curvy.vup";
-const TICKER_MENSAJES = ["🌸 Nueva colección disponible", "💕 Envíos a todo Colombia", "✨ Tallas OXL al 4XL", "🛍️ Pide por WhatsApp"];
+const TICKER_MENSAJES = ["Nueva colección disponible", "Envíos a toda Colombia", "Tallas S a 4XL", "Pide por WhatsApp"];
 
 const tieneImagen = (p) => !!(p.imagenes?.[0]?.trim() || p.imagen?.trim());
 const fechaCreacion = (p) => (p.creadoEn?.toDate ? p.creadoEn.toDate() : new Date(p.fechaIngreso || p.creadoEn || 0));
 const waLink = (texto) => `https://api.whatsapp.com/send?phone=${NUMERO_WA}&text=${encodeURIComponent(texto)}`;
 
 /* ── PRECIO CON OFERTA (oferta grande + badge -X% + tachado) ─ */
-function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, colorBase = "#8B1A4D", oscuro = false, compacto = false, etiqueta = null, mostrarContador = true }) {
+function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, colorBase = "var(--c-vino)", oscuro = false, compacto = false, etiqueta = null, mostrarContador = true }) {
   const colorEtiqueta = oscuro ? "rgba(255,255,255,0.85)" : "#888";
   if (!ofertaVigente(p)) return (
     <span style={{ display: "inline-flex", alignItems: "baseline", gap: 8 }}>
@@ -133,7 +133,7 @@ function LoaderReloj() {
       <div style={{ position: "absolute", bottom: -80, left: -80, width: 280, height: 280, borderRadius: "50%", background: "rgba(139,26,77,0.04)", pointerEvents: "none" }} />
 
       <div style={{ marginBottom: 40, textAlign: "center" }}>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, fontStyle: "italic", fontWeight: 700, color: "#8B1A4D", margin: "0 0 2px", letterSpacing: -1 }}>Curvy</h1>
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, fontStyle: "italic", fontWeight: 700, color: "var(--c-vino)", margin: "0 0 2px", letterSpacing: -1 }}>Curvy</h1>
         <p style={{ fontSize: 10, letterSpacing: 5, color: "#C2185B", fontWeight: 700, textTransform: "uppercase", margin: 0 }}>VUP</p>
       </div>
 
@@ -144,13 +144,13 @@ function LoaderReloj() {
             <clipPath id="clipAbajo"><path d="M14 108 L66 108 L40 60 Z" /></clipPath>
             <linearGradient id="gradArena" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#C2185B" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#8B1A4D" stopOpacity="1" />
+              <stop offset="100%" stopColor="var(--c-vino)" stopOpacity="1" />
             </linearGradient>
           </defs>
-          <rect x="8" y="4" width="64" height="8" rx="4" fill="#8B1A4D" />
-          <rect x="8" y="108" width="64" height="8" rx="4" fill="#8B1A4D" />
-          <line x1="14" y1="8" x2="14" y2="116" stroke="#8B1A4D" strokeWidth="4" strokeLinecap="round" />
-          <line x1="66" y1="8" x2="66" y2="116" stroke="#8B1A4D" strokeWidth="4" strokeLinecap="round" />
+          <rect x="8" y="4" width="64" height="8" rx="4" fill="var(--c-vino)" />
+          <rect x="8" y="108" width="64" height="8" rx="4" fill="var(--c-vino)" />
+          <line x1="14" y1="8" x2="14" y2="116" stroke="var(--c-vino)" strokeWidth="4" strokeLinecap="round" />
+          <line x1="66" y1="8" x2="66" y2="116" stroke="var(--c-vino)" strokeWidth="4" strokeLinecap="round" />
           <path d="M14 12 L66 12 L40 60 Z" fill="rgba(194,24,91,0.08)" />
           <path d="M14 108 L66 108 L40 60 Z" fill="rgba(194,24,91,0.08)" />
           {arriba > 0 && <g clipPath="url(#clipArriba)"><rect x="14" y={12 + 48 * (100 - arriba) / 100} width="52" height={48 * arriba / 100 + 10} fill="url(#gradArena)" /></g>}
@@ -161,11 +161,11 @@ function LoaderReloj() {
         </svg>
       </div>
 
-      <p style={{ fontSize: 17, fontWeight: 700, color: "#8B1A4D", textAlign: "center", padding: "0 40px", maxWidth: 320, lineHeight: 1.4, margin: "0 0 32px", minHeight: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>{mensaje}</p>
+      <p style={{ fontSize: 17, fontWeight: 700, color: "var(--c-vino)", textAlign: "center", padding: "0 40px", maxWidth: 320, lineHeight: 1.4, margin: "0 0 32px", minHeight: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>{mensaje}</p>
 
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} style={{ width: i === 2 ? 10 : 6, height: i === 2 ? 10 : 6, borderRadius: "50%", background: i === 2 ? "#8B1A4D" : "#F48FB1", animation: `puntito 1.6s ease-in-out ${i * 0.15}s infinite` }} />
+          <div key={i} style={{ width: i === 2 ? 10 : 6, height: i === 2 ? 10 : 6, borderRadius: "50%", background: i === 2 ? "var(--c-vino)" : "#F48FB1", animation: `puntito 1.6s ease-in-out ${i * 0.15}s infinite` }} />
         ))}
       </div>
     </div>
@@ -193,13 +193,13 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
 
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 600, boxShadow: conSombra ? "0 2px 12px rgba(0,0,0,0.08)" : "none", transition: "box-shadow 0.3s ease" }}>
-      <div style={{ background: "#8B1A4D", padding: "7px 0", overflow: "hidden" }}>
-        <div style={{ display: "flex", animation: "ticker 30s linear infinite", width: "max-content", gap: "60px" }}>
+      <div className="topbar">
+        <div style={{ display: "flex", animation: "ticker 45s linear infinite", width: "max-content" }}>
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} style={{ display: "flex", gap: "60px", whiteSpace: "nowrap" }}>
+            <div key={i} style={{ display: "flex", whiteSpace: "nowrap" }}>
               {TICKER_MENSAJES.map((m, j) => (
-                <span key={j} style={{ color: "rgba(255,255,255,0.9)", fontSize: 11, fontWeight: 500, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.5px" }}>
-                  {m}<span style={{ margin: "0 30px", color: "rgba(255,255,255,0.3)" }}> ·</span>
+                <span key={j} className="topbar__item">
+                  {m}<span className="topbar__sep"> ·</span>
                 </span>
               ))}
             </div>
@@ -207,53 +207,46 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
         </div>
       </div>
 
-      <div style={{ background: "white", borderBottom: "1px solid #f0f0f0" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px", height: 64, display: "flex", alignItems: "center", gap: 24 }}>
+      <div className="header" style={{ position: "static" }}>
+        <div className="header-inner" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px", height: "100%", width: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: 24 }}>
           <button className="hamburguesa" onClick={() => setMenuAbierto(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", flexDirection: "column", gap: 5 }}>
             {[0, 1, 2].map((i) => <div key={i} style={{ width: 22, height: 2, background: "#1a1a1a", borderRadius: 1 }} />)}
           </button>
 
-          <div onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 26, fontWeight: 700, color: "#8B1A4D", cursor: "pointer", flexShrink: 0, letterSpacing: -0.5 }}>
+          <div className="header-logo header__logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} style={{ display: "flex", alignItems: "center", fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 26, fontWeight: 700, color: "var(--c-vino)", cursor: "pointer", flexShrink: 0, letterSpacing: -0.5 }}>
             Curvy Vup
           </div>
 
-          <nav className="nav-desktop" style={{ display: "flex", alignItems: "center", gap: 4, flex: 1 }}>
-            <button onClick={() => onFiltrarCategoria("todas")}
-              style={{ background: "none", border: "none", padding: "8px 14px", fontSize: 13, fontWeight: 700, color: "#1a1a1a", cursor: "pointer", borderRadius: 8, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.3px", textTransform: "uppercase", transition: "all 0.15s ease", whiteSpace: "nowrap" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#C2185B"; e.currentTarget.style.background = "#FFF5F7"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "#1a1a1a"; e.currentTarget.style.background = "none"; }}>
+          <nav className="nav-desktop header__nav" style={{ display: "flex", alignItems: "center", gap: 4, flex: 1 }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); onFiltrarCategoria("todas"); }} style={{ paddingInline: 14, borderRadius: 8, whiteSpace: "nowrap" }}>
               Nuevo
-            </button>
+            </a>
             {categoriasFS.filter((c) => c.activa !== false).slice(0, 6).map((c) => (
-              <button key={c.id} onClick={() => onFiltrarCategoria(c.nombre)}
-                style={{ background: "none", border: "none", padding: "8px 14px", fontSize: 13, fontWeight: 600, color: "#333", cursor: "pointer", borderRadius: 8, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.3px", textTransform: "uppercase", transition: "all 0.15s ease", whiteSpace: "nowrap" }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "#C2185B"; e.currentTarget.style.background = "#FFF5F7"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "#333"; e.currentTarget.style.background = "none"; }}>
+              <a key={c.id} href="#" onClick={(e) => { e.preventDefault(); onFiltrarCategoria(c.nombre); }} style={{ paddingInline: 14, borderRadius: 8, whiteSpace: "nowrap" }}>
                 {c.nombre}
-              </button>
+              </a>
             ))}
-            <button onClick={() => onFiltrarCategoria("ofertas")}
-              style={{ background: "none", border: "none", padding: "8px 14px", fontSize: 13, fontWeight: 800, color: "#C2185B", cursor: "pointer", borderRadius: 8, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.3px", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-              ✦ Ofertas
-            </button>
+            <a href="#" onClick={(e) => { e.preventDefault(); onFiltrarCategoria("ofertas"); }} style={{ paddingInline: 14, borderRadius: 8, whiteSpace: "nowrap", color: "var(--action)", fontWeight: 800 }}>
+              Ofertas
+            </a>
           </nav>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, marginLeft: "auto", flexShrink: 0 }}>
             <button onClick={() => setBuscadorAbierto((v) => !v)}
-              style={{ width: 40, height: 40, borderRadius: "50%", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.15s" }}
+              style={{ width: 40, height: 40, borderRadius: "50%", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.15s", color: "var(--text)" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "#FFF5F7"} onMouseLeave={(e) => e.currentTarget.style.background = "none"}>
               <SearchIcon size={20} />
             </button>
             <a href={waLink("")} target="_blank" rel="noopener noreferrer"
-              style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "background 0.15s", color: "#AD1457" }}
+              style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "background 0.15s", color: "var(--text)" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "#FFF5F7"} onMouseLeave={(e) => e.currentTarget.style.background = "none"}>
               <WhatsappIcon size={20} />
             </a>
             <button onClick={onCartClick}
-              style={{ position: "relative", width: 40, height: 40, borderRadius: "50%", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.15s", color: "#AD1457" }}
+              style={{ position: "relative", width: 40, height: 40, borderRadius: "50%", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.15s", color: "var(--text)" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "#FFF5F7"} onMouseLeave={(e) => e.currentTarget.style.background = "none"}>
               <CartIcon size={20} />
-              {cartCount > 0 && <span style={{ position: "absolute", top: 4, right: 4, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{cartCount}</span>}
+              {cartCount > 0 && <span style={{ position: "absolute", top: 4, right: 4, background: "var(--action)", color: "white", fontSize: 9, fontWeight: 800, width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{cartCount}</span>}
             </button>
           </div>
         </div>
@@ -306,7 +299,7 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
           <div onClick={() => setMenuAbierto(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 998 }} />
           <div style={{ position: "fixed", top: 0, left: 0, width: 280, height: "100vh", background: "white", zIndex: 999, padding: 24, overflowY: "auto", animation: "slideRight 0.25s ease" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-              <span style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 22, fontWeight: 700, color: "#8B1A4D" }}>Curvy Vup</span>
+              <span style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 22, fontWeight: 700, color: "var(--c-vino)" }}>Curvy Vup</span>
               <button onClick={() => setMenuAbierto(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#999" }}>×</button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -324,8 +317,8 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
               ))}
               <div style={{ height: 1, background: "#f5f5f5", margin: "8px 0" }} />
               <button onClick={() => { onFiltrarCategoria("ofertas"); setMenuAbierto(false); }}
-                style={{ background: "none", border: "none", textAlign: "left", padding: "14px 16px", fontSize: 15, fontWeight: 800, color: "#C2185B", cursor: "pointer", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.5px", textTransform: "uppercase" }}>
-                ✦ Ofertas
+                style={{ background: "none", border: "none", textAlign: "left", padding: "14px 16px", fontSize: 15, fontWeight: 800, color: "var(--action)", cursor: "pointer", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.5px", textTransform: "uppercase" }}>
+                Ofertas
               </button>
             </div>
             <div style={{ marginTop: 32, padding: 16, background: "#FFF5F7", borderRadius: 16 }}>
@@ -344,38 +337,60 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         @media (min-width: 1024px) { .hamburguesa { display: none !important; } .nav-desktop { display: flex !important; } }
-        @media (max-width: 1023px) { .nav-desktop { display: none !important; } .hamburguesa { display: flex !important; } }
+        @media (max-width: 1023px) {
+          .nav-desktop { display: none !important; }
+          .hamburguesa { display: flex !important; }
+          .header { height: 64px; }
+          .header-inner { position: relative; }
+          .header-logo { position: absolute; left: 50%; transform: translateX(-50%); }
+        }
       `}</style>
     </div>
   );
 }
 
 /* ── HERO CARRUSEL ──────────────────────────────────── */
-const HERO_DEFAULT = { id: "_default", imagen: "", badge: "🌸 Nueva colección", titulo: "Moda para resaltar tu belleza real", subtitulo: "Tallas OXL al 4XL · Envíos a todo Colombia", textoBton: "Ver catálogo →", accion: "scroll" };
+const HERO_DEFAULT = { id: "_default", imagen: "", badge: "🌸 Nueva colección", titulo: "Moda para resaltar tu belleza real", subtitulo: "Tallas S a 4XL · Envíos a toda Colombia", textoBton: "Ver catálogo →", accion: "scroll" };
+
+// Mismo corte de 768px que usa .hero__caja-texto para el resto del hero en mobile.
+const MEDIA_MOBILE = "(max-width: 768px)";
 
 function HeroCarousel({ slides, onVerCatalogo }) {
   const lista = slides.length > 0 ? slides : [HERO_DEFAULT];
   const [i, setI] = useState(0);
+  const [esMobile, setEsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia(MEDIA_MOBILE).matches);
 
   useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % lista.length), 4000);
+    const mq = window.matchMedia(MEDIA_MOBILE);
+    const onChange = (e) => setEsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setI((v) => (v + 1) % lista.length), 6000);
     return () => clearInterval(t);
   }, [lista.length]);
 
   return (
-    <div style={{ position: "relative", height: "clamp(300px, 55vw, 580px)", overflow: "hidden" }}>
+    <div className="hero" style={{ overflow: "hidden" }}>
       {lista.map((s, idx) => {
-        const conImagen = !!s.imagen;
+        // La imagen mobile es opcional — si no la subieron, cae a la de
+        // desktop (misma imagen que hoy) sin romper slides ya existentes.
+        const imagenActual = esMobile ? (s.imagenMobile || s.imagen) : s.imagen;
+        const posicionActual = esMobile ? (s.imagenMobile ? s.posicionMobile : s.posicion) : s.posicion;
+        const conImagen = !!imagenActual;
         return (
-          <div key={s.id || idx} style={{ position: "absolute", inset: 0, opacity: idx === i ? 1 : 0, transition: "opacity 0.8s ease-in-out", zIndex: idx === i ? 1 : 0, background: conImagen ? "transparent" : "linear-gradient(135deg, #8B1A4D, #C2185B)" }}>
-            {conImagen && <img src={s.imagen} alt={s.titulo} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `${s.posicion?.x ?? 50}% ${s.posicion?.y ?? 50}%` }} />}
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "32px 80px 40px 32px", background: "linear-gradient(to top, rgba(139,26,77,0.72) 0%, rgba(139,26,77,0.18) 40%, transparent 65%)", zIndex: 10 }}>
+          <div key={s.id || idx} style={{ position: "absolute", inset: 0, opacity: idx === i ? 1 : 0, transition: "opacity 0.8s ease-in-out", zIndex: idx === i ? 1 : 0, background: conImagen ? "transparent" : "linear-gradient(135deg, var(--c-vino), #C2185B)" }}>
+            {conImagen && <img className="hero__media" src={imagenActual} alt={s.titulo} style={{ objectPosition: `${posicionActual?.x ?? 50}% ${posicionActual?.y ?? 50}%` }} />}
+            <div className="hero__velo" />
+            <div className="hero__caja-texto" style={{ position: "absolute", left: 64, bottom: 64, right: 80, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "flex-start", maxWidth: "min(560px, 60%)" }}>
               {s.badge && <span style={{ display: "inline-flex", alignItems: "center", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, padding: "5px 14px", fontSize: 11, fontWeight: 700, color: "#fff", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16, width: "fit-content" }}>{s.badge}</span>}
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(22px,5vw,46px)", fontWeight: 800, color: "#fff", margin: "0 0 8px", lineHeight: 1.1, textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>{s.titulo}</h2>
-              <p style={{ fontSize: "clamp(12px,2vw,15px)", color: "rgba(255,255,255,0.9)", margin: "0 0 20px", lineHeight: 1.5 }}>{s.subtitulo}</p>
+              <h2 className="hero__titulo" style={{ margin: "0 0 8px", textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>{s.titulo}</h2>
+              <p className="hero__sub" style={{ margin: "0 0 20px" }}>{s.subtitulo}</p>
               {s.textoBton && (
-                <button onClick={() => (s.accion === "link" && s.accionLink ? window.open(s.accionLink, "_blank") : onVerCatalogo())} className="btn-hero"
-                  style={{ background: "#fff", color: "#8B1A4D", border: "none", borderRadius: 50, padding: "11px 26px", fontSize: 14, fontWeight: 800, cursor: "pointer", width: "fit-content", boxShadow: "0 4px 20px rgba(0,0,0,0.18)" }}>
+                <button onClick={() => (s.accion === "link" && s.accionLink ? window.open(s.accionLink, "_blank") : onVerCatalogo())} className="btn btn--claro"
+                  style={{ width: "fit-content", boxShadow: "0 4px 20px rgba(0,0,0,0.18)" }}>
                   {s.textoBton}
                 </button>
               )}
@@ -389,9 +404,29 @@ function HeroCarousel({ slides, onVerCatalogo }) {
         style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", zIndex: 10, background: "rgba(255,255,255,0.25)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", width: 36, height: 36, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, lineHeight: 1 }}>›</button>
       <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", gap: 8 }}>
         {lista.map((_, idx) => (
-          <button key={idx} onClick={() => setI(idx)} style={{ width: idx === i ? 24 : 8, height: 8, borderRadius: 4, background: idx === i ? "#fff" : "rgba(255,255,255,0.45)", border: "none", cursor: "pointer", transition: "all 0.3s", padding: 0 }} />
+          <button key={idx} onClick={() => setI(idx)} style={{ width: 8, height: 8, borderRadius: "50%", background: idx === i ? "var(--brand)" : "var(--c-arena)", opacity: idx === i ? 1 : 0.5, border: "none", cursor: "pointer", transition: "all 0.3s", padding: 0 }} />
         ))}
       </div>
+      <style>{`
+        /* Las fotos de banner suelen traer texto propio horneado en la imagen
+           (ej. "Nueva colección · Luz natural"). El .hero__velo horizontal ya
+           oscurece la izquierda, pero en mobile el recorte "cover" cambia dónde
+           cae ese texto y puede chocar con el bloque HTML. En vez de una capa
+           pareja sobre toda la foto (prohibido en los tokens), este fondo va
+           SOLO detrás del texto, ajustado a su propio tamaño. */
+        @media (max-width: 768px) {
+          .hero__caja-texto {
+            left: 20px !important;
+            right: 20px !important;
+            bottom: 28px !important;
+            max-width: none !important;
+            background: rgba(28,22,20,0.42);
+            backdrop-filter: blur(6px);
+            border-radius: 16px;
+            padding: 16px 18px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -445,7 +480,7 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
   return (
     <section style={{ padding: "52px 20px", background: "#fff" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(22px,4vw,32px)", fontWeight: 700, color: "#1C0F17", margin: "0 0 8px", textAlign: "center" }}>Las más pedidas ✨</h2>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(22px,4vw,32px)", fontWeight: 700, color: "#1C0F17", margin: "0 0 8px", textAlign: "center" }}>Las más pedidas</h2>
         <p style={{ color: "#7B4F6A", fontSize: 14, textAlign: "center", margin: "0 0 36px" }}>Las favoritas de nuestra comunidad</p>
         <div className="mas-pedidas-grid">
           {prendas.slice(0, 3).map((p) => {
@@ -453,7 +488,7 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
             return (
               <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover img-hover-wrap" style={{ borderRadius: 20, overflow: "hidden", position: "relative", aspectRatio: "3/4", cursor: "pointer", boxShadow: "0 8px 32px rgba(139,26,77,0.18)" }}>
                 {img ? <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #8B1A4D, #C2185B)" }} />}
+                  : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, var(--c-vino), #C2185B)" }} />}
                 <span style={{ position: "absolute", top: 12, right: 14, fontSize: 20, zIndex: 2 }}>✨</span>
                 {!ofertaVigente(p) && <span style={{ position: "absolute", top: 12, left: 14, fontSize: 16, zIndex: 2 }}>🌸</span>}
                 <BadgeDescuentoFoto p={p} />
@@ -462,7 +497,7 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px", zIndex: 2 }}>
                   <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
                   <p style={{ margin: "0 0 12px" }}><PrecioConOferta p={p} fontSize={18} oscuro compacto /></p>
-                  <button onClick={(e) => { e.stopPropagation(); abrirWhatsappProducto(p); }} style={{ width: "100%", padding: "10px 0", borderRadius: 14, background: "#fff", color: "#8B1A4D", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Pedir 💕</button>
+                  <button onClick={(e) => { e.stopPropagation(); abrirWhatsappProducto(p); }} style={{ width: "100%", padding: "10px 0", borderRadius: 14, background: "#fff", color: "var(--c-vino)", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Pedir 💕</button>
                 </div>
               </div>
             );
@@ -476,17 +511,17 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
 /* ── SECCIÓN CTA MEDIO ──────────────────────────────── */
 function SeccionCTA({ onVerCatalogo }) {
   return (
-    <section style={{ background: "linear-gradient(135deg, #8B1A4D 0%, #C2185B 100%)", padding: "52px 20px" }}>
+    <section style={{ background: "linear-gradient(135deg, var(--c-vino) 0%, #C2185B 100%)", padding: "52px 20px" }}>
       <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexWrap: "wrap", gap: 40, alignItems: "center", justifyContent: "center" }}>
         <div style={{ color: "#fff", flex: "1 1 240px" }}>
-          <p style={{ fontSize: 16, margin: "0 0 12px", fontWeight: 500 }}>✨ Realza tu estilo</p>
-          <p style={{ fontSize: 16, margin: "0 0 12px", fontWeight: 500 }}>💕 Moda que te abraza</p>
-          <p style={{ fontSize: 16, margin: 0, fontWeight: 500 }}>🌸 Tallas para todas</p>
+          <p style={{ fontSize: 16, margin: "0 0 12px", fontWeight: 500 }}>Moda que abraza cada curva</p>
+          <p style={{ fontSize: 16, margin: "0 0 12px", fontWeight: 500 }}>Tallas S a 4XL</p>
+          <p style={{ fontSize: 16, margin: 0, fontWeight: 500 }}>Envíos a toda Colombia</p>
         </div>
         <div style={{ flex: "1 1 240px", display: "flex", flexDirection: "column", gap: 12 }}>
           <p style={{ color: "rgba(255,255,255,0.88)", margin: 0, fontSize: 14 }}>100% seleccionado para ti</p>
-          <p style={{ color: "rgba(255,255,255,0.88)", margin: 0, fontSize: 14 }}>Envíos a todo Colombia</p>
-          <button onClick={onVerCatalogo} className="btn-hero" style={{ background: "#fff", color: "#8B1A4D", border: "none", borderRadius: 50, padding: "13px 28px", fontSize: 14, fontWeight: 800, cursor: "pointer", width: "fit-content", boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}>
+          <p style={{ color: "rgba(255,255,255,0.88)", margin: 0, fontSize: 14 }}>Envíos a toda Colombia</p>
+          <button onClick={onVerCatalogo} className="btn-hero" style={{ background: "#fff", color: "var(--c-vino)", border: "none", borderRadius: 50, padding: "13px 28px", fontSize: 14, fontWeight: 800, cursor: "pointer", width: "fit-content", boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}>
             Ver todo el catálogo →
           </button>
         </div>
@@ -500,8 +535,8 @@ function SeccionInstagram({ fotos }) {
   return (
     <section style={{ background: "#FFF5F7", padding: "52px 20px", textAlign: "center" }}>
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,30px)", fontWeight: 700, color: "#1C0F17", margin: "0 0 8px" }}>Síguenos en Instagram 📸</h2>
-        <a href={IG_URL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#8B1A4D", fontWeight: 700, fontSize: 16, textDecoration: "none", marginBottom: 32 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,30px)", fontWeight: 700, color: "#1C0F17", margin: "0 0 8px" }}>Síguenos en Instagram</h2>
+        <a href={IG_URL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "var(--c-vino)", fontWeight: 700, fontSize: 16, textDecoration: "none", marginBottom: 32 }}>
           <InstagramIcon size={18} /> {IG_HANDLE}
         </a>
         <div className="ig-grid">
@@ -536,9 +571,8 @@ function Footer() {
           <div>
             <p style={{ fontWeight: 700, fontSize: 13, color: "#C2185B", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: 1 }}>Información</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {[{ icon: "🔄", titulo: "Política de cambios", desc: "5 días para cambios por talla" }, { icon: "📏", titulo: "Guía de tallas", desc: "Encuentra tu talla OXL al 4XL" }, { icon: "🚚", titulo: "Envíos a Colombia", desc: "Despachamos a todo el país" }].map((it) => (
+              {[{ titulo: "Política de cambios", desc: "5 días para cambios por talla" }, { titulo: "Guía de tallas", desc: "Encuentra tu talla, de la S a la 4XL" }, { titulo: "Envíos a Colombia", desc: "Despachamos a todo el país" }].map((it) => (
                 <div key={it.titulo} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                  <span style={{ fontSize: 16, marginTop: 1 }}>{it.icon}</span>
                   <div>
                     <p style={{ fontSize: 13, fontWeight: 600, color: "#FCE4EC", margin: "0 0 2px" }}>{it.titulo}</p>
                     <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", margin: 0 }}>{it.desc}</p>
@@ -553,7 +587,7 @@ function Footer() {
               <a href={IG_URL} target="_blank" rel="noopener noreferrer" style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C2185B", textDecoration: "none" }}><InstagramIcon size={18} /></a>
               <a href={waLink("")} target="_blank" rel="noopener noreferrer" style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#25D366", textDecoration: "none" }}><WhatsappIcon size={18} /></a>
             </div>
-            <p style={{ fontSize: 13, color: "#7B4F6A", margin: 0 }}>Hecho con 💕 para mujeres reales</p>
+            <p style={{ fontSize: 13, color: "#7B4F6A", margin: 0 }}>Hecho para mujeres reales</p>
           </div>
         </div>
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: 44, padding: "20px 0" }}>
@@ -572,17 +606,14 @@ function Footer() {
 }
 
 /* ── TARJETA DE PRODUCTO (grid principal) ───────────── */
-function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
+/* ── TARJETA DE CATÁLOGO — sin overlays, precio compacto, sin acento de marca ─ */
+function TarjetaCatalogo({ p, onClick }) {
   const imagenes = p.imagenes?.length ? p.imagenes : (p.imagen ? [p.imagen] : []);
-  const stockTotal = Number(p.stock) || 0;
-  const tallasDisp = TALLAS_FILTRO.filter((t) => Number(p.stockPorTalla?.[t] || 0) > 0);
-  const [tallaSel, setTallaSel] = useState(tallasDisp[0] || "");
   const [indiceImg, setIndiceImg] = useState(0);
   const [hoverActivo, setHoverActivo] = useState(false);
   const touchRef = useRef({ x: 0 });
-  const ultimaUnidad = stockTotal > 0 && stockTotal <= 1;
-  const esNueva = (Date.now() - fechaCreacion(p).getTime()) / (1000 * 60 * 60 * 24) <= 7;
   const indiceMostrado = hoverActivo && indiceImg === 0 && imagenes.length > 1 ? 1 : indiceImg;
+  const enOferta = ofertaVigente(p);
 
   const onTouchStart = (e) => { touchRef.current.x = e.touches[0].clientX; };
   const onTouchEnd = (e) => {
@@ -592,42 +623,26 @@ function ProductoTarjetaGrid({ p, liked, onToggleLike, onClick }) {
   };
 
   return (
-    <div onClick={onClick} className="grid-card tarjeta-hover" style={{ background: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", cursor: "pointer", position: "relative" }}>
-      <div style={{ position: "relative", width: "100%", paddingTop: "120%", overflow: "hidden", background: "#FFF5F7", touchAction: "pan-y" }}
+    // min-width: 0 es obligatorio en items de grid: sin esto, un nombre largo con whiteSpace:"nowrap"
+    // (ej. productos sin campo "nombre" que caen a "descripcion") expande la columna por su ancho
+    // mínimo intrínseco y rompe el grid, sin importar cuántos caracteres tenga.
+    <div onClick={onClick} className="tarjeta-hover" style={{ cursor: "pointer", minWidth: 0 }}>
+      <div style={{ position: "relative", width: "100%", aspectRatio: "3 / 4", overflow: "hidden", background: "#FAFAFA", touchAction: "pan-y" }}
         onMouseEnter={() => setHoverActivo(true)} onMouseLeave={() => setHoverActivo(false)}
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {imagenes.length > 0 ? imagenes.map((src, i) => (
           <img key={i} src={src} alt={nombreDe(p)} loading="lazy" decoding="async"
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", opacity: i === indiceMostrado ? 1 : 0, transition: "opacity 250ms ease", pointerEvents: "none" }} />
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", opacity: i === indiceMostrado ? 1 : 0, transition: "opacity 250ms ease", pointerEvents: "none" }} />
         )) : (
-          <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              <span style={{ fontSize: 32 }}>🪡</span><span style={{ fontSize: 11, color: "#C2185B", fontWeight: 500 }}>Foto próximamente</span>
-            </div>
+          <div style={{ position: "absolute", inset: 0, background: "#F0F0F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🪡</div>
         )}
-        <BadgeDescuentoFoto p={p} />
-        {!ofertaVigente(p) && (ultimaUnidad ? <span style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20, letterSpacing: 0.5 }}>⚠️ ÚLTIMA</span>
-          : esNueva ? <span style={{ position: "absolute", top: 10, left: 10, background: "#FCE4EC", color: "#C2185B", border: "1px solid #C2185B", fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>🌸 NUEVO</span> : null)}
-        <button onClick={(e) => { e.stopPropagation(); onToggleLike(p.id); }}
-          style={{ position: "absolute", top: 10, right: 10, width: 32, height: 32, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15 }}>
-          {liked ? "❤️" : "🤍"}
-        </button>
-        <DotsFotos cantidad={imagenes.length} activo={indiceImg} />
       </div>
-      <div style={{ padding: "10px 12px 14px" }}>
-        <span style={{ fontSize: 10, color: "#999", textTransform: "uppercase", letterSpacing: 1, fontWeight: 500 }}>{p.categoria}</span>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 34 }}>{nombreDe(p)}</p>
-        <p style={{ margin: "0 0 10px" }}><PrecioConOferta p={p} fontSize={17} colorBase="#C2185B" compacto /></p>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {tallasDisp.length > 0 ? (
-            <select value={tallaSel} onChange={(e) => { e.stopPropagation(); setTallaSel(e.target.value); }} onClick={(e) => e.stopPropagation()}
-              style={{ flex: 1, padding: "7px 8px", borderRadius: 10, border: "1px solid #F5E6EE", fontSize: 12, color: "#666", background: "#FFF5F7", outline: "none", cursor: "pointer" }}>
-              {tallasDisp.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          ) : <span style={{ flex: 1, fontSize: 11, color: "#999" }}>Talla única</span>}
-          <button onClick={(e) => { e.stopPropagation(); window.open(waLink(`Hola Curvy! 💕 Me interesa: ${nombreDe(p)}${tallaSel ? ` - Talla: ${tallaSel}` : ""} - Código: ${p.id}`), "_blank"); }}
-            style={{ padding: "7px 14px", background: "#C2185B", color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
-            💬 Pedir
-          </button>
+      <div style={{ padding: "12px 2px 0" }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", letterSpacing: 0.4, textTransform: "uppercase", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombreDe(p)}</p>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+          {enOferta && <span style={{ fontSize: 12, color: "#B0B0B0", textDecoration: "line-through" }}>{fmt(p.precioVenta)}</span>}
+          {enOferta && <span style={{ fontSize: 10, fontWeight: 700, color: "#C2185B", background: "#FCE8EF", padding: "2px 6px", borderRadius: 4 }}>-{porcentajeDescuento(p)}%</span>}
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>{fmt(enOferta ? p.precioOferta : p.precioVenta)}</span>
         </div>
       </div>
     </div>
@@ -651,7 +666,7 @@ function TarjetaEditorial({ p, onClick, mostrarNombre = false, mostrarContador =
   const [indiceImg, setIndiceImg] = useState(0);
   const [hoverActivo, setHoverActivo] = useState(false);
   const touchRef = useRef({ x: 0 });
-  // Mismo patrón de hover/swipe que ProductoTarjetaGrid: hover en desktop asoma la 2da foto, swipe en mobile recorre todas.
+  // Hover en desktop asoma la 2da foto, swipe en mobile recorre todas.
   const indiceMostrado = hoverActivo && indiceImg === 0 && imagenes.length > 1 ? 1 : indiceImg;
 
   const onTouchStart = (e) => { touchRef.current.x = e.touches[0].clientX; };
@@ -662,7 +677,7 @@ function TarjetaEditorial({ p, onClick, mostrarNombre = false, mostrarContador =
   };
 
   return (
-    <div onClick={onClick} className="tarjeta-hover" style={{ cursor: "pointer" }}>
+    <div onClick={onClick} className="tarjeta-hover" style={{ cursor: "pointer", minWidth: 0 }}>
       <div style={{ position: "relative", width: "100%", paddingTop: "125%", overflow: "hidden", background: "#FAFAFA", touchAction: "pan-y" }}
         onMouseEnter={() => setHoverActivo(true)} onMouseLeave={() => setHoverActivo(false)}
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
@@ -762,75 +777,59 @@ function BotonWhatsappFlotante() {
   );
 }
 
-/* ── BARRA DE FILTROS DEL CATÁLOGO ──────────────────── */
-function BarraFiltros({ categoriasFS, categoriaActiva, setCategoriaActiva, tallasActivas, toggleTalla, ordenActivo, setOrdenActivo, limpiarFiltros, totalResultados, hayFiltrosActivos }) {
-  const tabsDesktop = [{ id: "todas", label: "TODAS" }, ...categoriasFS.filter((c) => c.activa !== false).map((c) => ({ id: c.nombre, label: c.nombre.toUpperCase() }))];
-  const tabsMovil = [{ id: "todas", label: "Todas" }, ...categoriasFS.filter((c) => c.activa !== false).map((c) => ({ id: c.nombre, label: c.nombre }))];
-
-  const BotonTalla = ({ talla }) => {
-    const activo = tallasActivas.includes(talla);
-    return <button onClick={() => toggleTalla(talla)} style={{ padding: "6px 14px", borderRadius: 50, border: activo ? "2px solid #C2185B" : "1.5px solid #E0E0E0", background: activo ? "#C2185B" : "white", color: activo ? "white" : "#555", fontSize: 12, fontWeight: activo ? 700 : 500, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s ease", flexShrink: 0 }}>{talla}</button>;
-  };
-
-  const BotonLimpiar = ({ mini = false }) => hayFiltrosActivos ? (
-    <button onClick={limpiarFiltros} style={{ display: "flex", alignItems: "center", gap: mini ? 4 : 6, padding: mini ? "5px 12px" : "6px 14px", borderRadius: 50, border: mini ? "none" : "1.5px solid #F5E6EE", background: mini ? "#FCE4EC" : "#FFF5F7", color: "#C2185B", fontSize: mini ? 11 : 12, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>
-      × {mini ? "Limpiar" : "Limpiar filtros"}
-      {tallasActivas.length > 0 && <span style={{ background: "#C2185B", color: "white", borderRadius: "50%", width: mini ? 14 : 16, height: mini ? 14 : 16, fontSize: mini ? 9 : 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{tallasActivas.length}</span>}
-    </button>
-  ) : null;
-
-  const SelectorOrden = ({ mini = false }) => (
-    <select value={ordenActivo} onChange={(e) => setOrdenActivo(e.target.value)}
-      style={{ padding: mini ? "5px 10px" : "6px 12px", borderRadius: 50, border: "1.5px solid #E0E0E0", fontSize: mini ? 11 : 12, color: "#555", fontWeight: 500, background: "white", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none", flexShrink: 0 }}>
-      <option value="recientes">Más recientes</option>
-      <option value="menor">Menor precio</option>
-      <option value="mayor">Mayor precio</option>
-    </select>
+/* ── PANEL DE FILTROS DEL CATÁLOGO — secciones colapsables, sidebar (desktop) o drawer (móvil) ─ */
+function SeccionColapsable({ id, titulo, abierta, onToggle, children }) {
+  return (
+    <div style={{ borderBottom: "1px solid #EEE", padding: "18px 0" }}>
+      <button onClick={() => onToggle(id)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 700, letterSpacing: 1, color: "#1a1a1a", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
+        {titulo}
+        <span style={{ fontSize: 16, fontWeight: 400, color: "#999" }}>{abierta ? "−" : "+"}</span>
+      </button>
+      {abierta && <div style={{ marginTop: 14 }}>{children}</div>}
+    </div>
   );
+}
+
+function PanelFiltros({ categoriasFS, categoriaActiva, setCategoriaActiva, tallasActivas, toggleTalla, precioMin, setPrecioMin, precioMax, setPrecioMax, hayFiltrosActivos, limpiarFiltros }) {
+  const [abiertas, setAbiertas] = useState({ talla: true, precio: true, categoria: true });
+  const onToggle = (id) => setAbiertas((a) => ({ ...a, [id]: !a[id] }));
+  const categorias = [{ id: "todas", label: "Todas" }, ...categoriasFS.filter((c) => c.activa !== false).map((c) => ({ id: c.nombre, label: c.nombre }))];
 
   return (
-    <div style={{ background: "white", borderBottom: "1px solid #F5E6EE", position: "sticky", top: 93, zIndex: 500 }}>
-      <div className="filtros-desktop" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 32px" }}>
-        <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid #F5F5F5", overflowX: "auto", scrollbarWidth: "none" }}>
-          {tabsDesktop.map((t) => {
-            const activo = t.id === "todas" ? categoriaActiva === "todas" : categoriaActiva.toLowerCase() === t.id.toLowerCase();
-            return <button key={t.id} onClick={() => setCategoriaActiva(t.id)} style={{ background: "none", border: "none", padding: "16px 20px", fontSize: 13, fontWeight: activo ? 800 : 500, color: activo ? "#8B1A4D" : "#666", cursor: "pointer", borderBottom: activo ? "2px solid #C2185B" : "2px solid transparent", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.8px", whiteSpace: "nowrap", transition: "all 0.15s ease", marginBottom: -1 }}>{t.label}</button>;
+    <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <SeccionColapsable id="talla" titulo="Talla" abierta={abiertas.talla} onToggle={onToggle}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {TALLAS_FILTRO.map((t) => {
+            const activo = tallasActivas.includes(t);
+            return <button key={t} onClick={() => toggleTalla(t)} style={{ padding: "6px 12px", borderRadius: 4, border: activo ? "1px solid #1a1a1a" : "1px solid #DDD", background: activo ? "#1a1a1a" : "#fff", color: activo ? "#fff" : "#333", fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>{t}</button>;
           })}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 0", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#999", fontFamily: "'DM Sans', sans-serif", letterSpacing: "1px", textTransform: "uppercase", marginRight: 4, flexShrink: 0 }}>Talla:</span>
-          {TALLAS_FILTRO.map((t) => <BotonTalla key={t} talla={t} />)}
-          <div style={{ width: 1, height: 24, background: "#E0E0E0", margin: "0 8px", flexShrink: 0 }} />
-          <SelectorOrden />
-          <BotonLimpiar />
-          <span style={{ marginLeft: "auto", fontSize: 12, color: "#999", fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>{totalResultados} prenda{totalResultados === 1 ? "" : "s"}</span>
-        </div>
-      </div>
+      </SeccionColapsable>
 
-      <div className="filtros-movil">
-        <div style={{ display: "flex", gap: 8, padding: "12px 16px", overflowX: "auto", scrollbarWidth: "none", borderBottom: "1px solid #F5F5F5" }}>
-          {tabsMovil.map((t) => {
-            const activo = t.id === "todas" ? categoriaActiva === "todas" : categoriaActiva.toLowerCase() === t.id.toLowerCase();
-            return <button key={t.id} onClick={() => setCategoriaActiva(t.id)} style={{ padding: "8px 18px", borderRadius: 50, border: activo ? "2px solid #C2185B" : "1.5px solid #E0E0E0", background: activo ? "#C2185B" : "white", color: activo ? "white" : "#555", fontSize: 13, fontWeight: activo ? 700 : 500, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s ease" }}>{t.label}</button>;
+      <SeccionColapsable id="precio" titulo="Precio" abierta={abiertas.precio} onToggle={onToggle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input type="number" min="0" placeholder="Mín" value={precioMin} onChange={(e) => setPrecioMin(e.target.value)}
+            style={{ width: 0, flex: 1, padding: "7px 8px", border: "1px solid #DDD", borderRadius: 4, fontSize: 12, fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
+          <span style={{ color: "#999" }}>–</span>
+          <input type="number" min="0" placeholder="Máx" value={precioMax} onChange={(e) => setPrecioMax(e.target.value)}
+            style={{ width: 0, flex: 1, padding: "7px 8px", border: "1px solid #DDD", borderRadius: 4, fontSize: 12, fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
+        </div>
+      </SeccionColapsable>
+
+      <SeccionColapsable id="categoria" titulo="Categoría" abierta={abiertas.categoria} onToggle={onToggle}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {categorias.map((c) => {
+            const activo = c.id === "todas" ? categoriaActiva === "todas" : categoriaActiva.toLowerCase() === c.id.toLowerCase();
+            return <button key={c.id} onClick={() => setCategoriaActiva(c.id)} style={{ textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, fontWeight: activo ? 700 : 400, color: activo ? "#C2185B" : "#333", fontFamily: "'DM Sans', sans-serif" }}>{c.label}</button>;
           })}
         </div>
-        <div style={{ display: "flex", gap: 8, padding: "10px 16px", overflowX: "auto", scrollbarWidth: "none", alignItems: "center" }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#999", fontFamily: "'DM Sans', sans-serif", letterSpacing: "1px", textTransform: "uppercase", flexShrink: 0 }}>Talla:</span>
-          {TALLAS_FILTRO.map((t) => <BotonTalla key={t} talla={t} />)}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px 10px", borderTop: "1px solid #F5F5F5" }}>
-          <span style={{ fontSize: 12, color: "#999", fontFamily: "'DM Sans', sans-serif" }}>{totalResultados} prendas</span>
-          <BotonLimpiar mini />
-          <div style={{ marginLeft: "auto" }}><SelectorOrden mini /></div>
-        </div>
-      </div>
+      </SeccionColapsable>
 
-      <style>{`
-        @keyframes aparecer { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        .filtros-desktop div::-webkit-scrollbar, .filtros-movil div::-webkit-scrollbar { display: none; }
-        @media (min-width: 1024px) { .filtros-desktop { display: block !important; } .filtros-movil { display: none !important; } }
-        @media (max-width: 1023px) { .filtros-desktop { display: none !important; } .filtros-movil { display: block !important; } }
-      `}</style>
+      {hayFiltrosActivos && (
+        <button onClick={limpiarFiltros} style={{ marginTop: 16, background: "none", border: "none", padding: 0, color: "#C2185B", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+          × Limpiar filtros
+        </button>
+      )}
     </div>
   );
 }
@@ -842,11 +841,11 @@ function GuiaTallas({ tallasDisp, prenda, onCerrar }) {
     : "Hola Curvy Vup! Necesito ayuda para encontrar mi talla 📏";
   const esPlus = tallasDisp.some((t) => TALLAS_PLUS.includes(t));
   const tabla = esPlus
-    ? { headers: ["OXL", "1XL", "2XL", "3XL", "4XL"], filas: [
-        { medida: "👗 Busto (cm)", valores: ["96-101", "102-107", "108-113", "114-119", "120-125"] },
-        { medida: "⬛ Cintura (cm)", valores: ["82-87", "88-93", "94-99", "100-105", "106-111"] },
-        { medida: "🍑 Cadera (cm)", valores: ["106-111", "112-117", "118-123", "124-129", "130-135"] },
-      ], extra: { medida: "⚖️ Peso aprox.", valores: ["70-80kg", "80-90kg", "90-100kg", "100-110kg", "110-120kg"] } }
+    ? { headers: ["XL", "2XL", "3XL", "4XL"], filas: [
+        { medida: "👗 Busto (cm)", valores: ["96-107", "108-113", "114-119", "120-125"] },
+        { medida: "⬛ Cintura (cm)", valores: ["82-93", "94-99", "100-105", "106-111"] },
+        { medida: "🍑 Cadera (cm)", valores: ["106-117", "118-123", "124-129", "130-135"] },
+      ], extra: { medida: "⚖️ Peso aprox.", valores: ["70-90kg", "90-100kg", "100-110kg", "110-120kg"] } }
     : { headers: ["XS", "S", "M", "L", "XL"], filas: [
         { medida: "👗 Busto (cm)", valores: ["76-81", "82-87", "88-93", "94-99", "100-105"] },
         { medida: "⬛ Cintura (cm)", valores: ["58-63", "64-69", "70-75", "76-81", "82-87"] },
@@ -858,8 +857,8 @@ function GuiaTallas({ tallasDisp, prenda, onCerrar }) {
       <div className="guia-tallas-panel" onClick={(e) => e.stopPropagation()} style={{ background: "white", width: "100%", maxHeight: "90vh", borderRadius: "24px 24px 0 0", overflowY: "auto", padding: "0 0 32px" }}>
         <div style={{ width: 40, height: 4, background: "#E0E0E0", borderRadius: 2, margin: "12px auto 20px" }} />
         <div style={{ textAlign: "center", padding: "0 24px 20px", borderBottom: "2px solid #FCE4EC" }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#8B1A4D", margin: "0 0 4px" }}>📏 Guía de Tallas</h2>
-          <p style={{ fontSize: 12, color: "#999", margin: 0 }}>{esPlus ? "Tallas Plus Size · OXL al 4XL" : "Tallas Estándar · XS al XL"}</p>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--c-vino)", margin: "0 0 4px" }}>Guía de Tallas</h2>
+          <p style={{ fontSize: 12, color: "#999", margin: 0 }}>{esPlus ? "Tallas Plus Size · XL al 4XL" : "Tallas Estándar · XS al XL"}</p>
         </div>
         <div style={{ padding: "20px 24px" }}>
           <p style={{ fontSize: 13, color: "#555", marginBottom: 16, lineHeight: 1.5, background: "#FFF5F7", padding: "12px 16px", borderRadius: 12, borderLeft: "3px solid #C2185B" }}>
@@ -868,7 +867,7 @@ function GuiaTallas({ tallasDisp, prenda, onCerrar }) {
           <div style={{ overflowX: "auto" }}>
             <table className="guia-tallas-tabla" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "white" }}>
+                <tr style={{ background: "linear-gradient(135deg, var(--c-vino), #C2185B)", color: "white" }}>
                   <th style={{ padding: "12px 8px 12px 16px", textAlign: "left", borderRadius: "12px 0 0 0" }}>Medida</th>
                   {tabla.headers.map((h) => <th key={h} style={{ padding: "12px 8px", textAlign: "center", fontWeight: 800 }}>{h}</th>)}
                 </tr>
@@ -876,13 +875,13 @@ function GuiaTallas({ tallasDisp, prenda, onCerrar }) {
               <tbody>
                 {tabla.filas.map((f, i) => (
                   <tr key={i} style={{ background: i % 2 === 0 ? "#FFF5F7" : "white" }}>
-                    <td style={{ padding: "12px 8px 12px 16px", fontWeight: 700, color: "#8B1A4D", fontSize: 12 }}>{f.medida}</td>
+                    <td style={{ padding: "12px 8px 12px 16px", fontWeight: 700, color: "var(--c-vino)", fontSize: 12 }}>{f.medida}</td>
                     {f.valores.map((v, j) => <td key={j} style={{ padding: "12px 8px", textAlign: "center", color: "#444" }}>{v}</td>)}
                   </tr>
                 ))}
                 <tr style={{ background: "#FCE4EC" }}>
-                  <td style={{ padding: "12px 8px 12px 16px", fontWeight: 700, color: "#8B1A4D", fontSize: 12 }}>{tabla.extra.medida}</td>
-                  {tabla.extra.valores.map((v, j) => <td key={j} style={{ padding: "12px 8px", textAlign: "center", color: "#8B1A4D", fontWeight: 600, fontSize: 11 }}>{v}</td>)}
+                  <td style={{ padding: "12px 8px 12px 16px", fontWeight: 700, color: "var(--c-vino)", fontSize: 12 }}>{tabla.extra.medida}</td>
+                  {tabla.extra.valores.map((v, j) => <td key={j} style={{ padding: "12px 8px", textAlign: "center", color: "var(--c-vino)", fontWeight: 600, fontSize: 11 }}>{v}</td>)}
                 </tr>
               </tbody>
             </table>
@@ -890,7 +889,7 @@ function GuiaTallas({ tallasDisp, prenda, onCerrar }) {
           <p style={{ fontSize: 11, color: "#999", margin: "12px 0 0", lineHeight: 1.5 }}>
             El peso es referencial — dos personas con el mismo peso pueden usar tallas distintas según su contextura. Prioriza las medidas de busto, cintura y cadera.
           </p>
-          <div style={{ marginTop: 20, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", borderRadius: 14, padding: 16, color: "white", textAlign: "center" }}>
+          <div style={{ marginTop: 20, background: "linear-gradient(135deg, var(--c-vino), #C2185B)", borderRadius: 14, padding: 16, color: "white", textAlign: "center" }}>
             <p style={{ fontSize: 13, margin: "0 0 8px", fontWeight: 700 }}>¿Dudas con tu talla? 💕</p>
             <a href={waLink(textoAyudaTalla)} target="_blank" rel="noopener noreferrer" style={{ color: "white", fontSize: 12, fontWeight: 600, textDecoration: "underline" }}>Escríbenos y te ayudamos a elegir ✨</a>
           </div>
@@ -930,7 +929,7 @@ function SobreEstaPrenda({ prenda }) {
           <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
             {visibles.map((linea, i) => (
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "11px 0", borderBottom: i < visibles.length - 1 ? "1px solid #FFF5F7" : "none", animation: "aparecer2 0.3s ease forwards", animationDelay: `${i * 0.05}s`, opacity: 0 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "linear-gradient(135deg, #8B1A4D, #C2185B)", flexShrink: 0, marginTop: 5, boxShadow: "0 2px 6px rgba(194,24,91,0.3)" }} />
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "linear-gradient(135deg, var(--c-vino), #C2185B)", flexShrink: 0, marginTop: 5, boxShadow: "0 2px 6px rgba(194,24,91,0.3)" }} />
                 <span style={{ fontSize: 14, color: "#444", lineHeight: 1.6 }}>{linea.trim()}</span>
               </div>
             ))}
@@ -949,7 +948,7 @@ function SobreEstaPrenda({ prenda }) {
       {prenda.nombre && prenda.descripcion && lista.length > 0 && <hr style={{ border: "none", borderTop: "1px solid #F5E6EE", margin: "20px 0" }} />}
       {prenda.nombre && prenda.descripcion && (
         <div style={{ background: "#FFF5F7", borderRadius: 14, padding: "16px 20px", borderLeft: "3px solid #C2185B" }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "#8B1A4D", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1, display: "flex", alignItems: "center", gap: 6 }}>📝 Descripción</p>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--c-vino)", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1, display: "flex", alignItems: "center", gap: 6 }}>📝 Descripción</p>
           <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8, margin: 0, whiteSpace: "pre-line" }}>{prenda.descripcion}</p>
         </div>
       )}
@@ -1020,7 +1019,7 @@ function ResenasProducto({ prendaId }) {
           {resenas.length > 0 && <span style={{ fontSize: 13, color: "#999", fontWeight: 600 }}>({resenas.length})</span>}
         </div>
         {resenas.length > 0 && !formAbierto && (
-          <button onClick={() => setFormAbierto(true)} style={{ background: "#FCE4EC", border: "1px solid #F48FB1", color: "#8B1A4D", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20, cursor: "pointer" }}>Escribir reseña</button>
+          <button onClick={() => setFormAbierto(true)} style={{ background: "#FCE4EC", border: "1px solid #F48FB1", color: "var(--c-vino)", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20, cursor: "pointer" }}>Escribir reseña</button>
         )}
       </div>
 
@@ -1043,7 +1042,7 @@ function ResenasProducto({ prendaId }) {
       {formAbierto && (
         <form onSubmit={enviar} style={{ background: "#FFF5F7", borderRadius: 14, padding: 20, marginBottom: resenas.length > 0 ? 20 : 0, display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
-            <p style={{ fontSize: 12, fontWeight: 700, color: "#8B1A4D", margin: "0 0 6px" }}>Tu calificación</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: "var(--c-vino)", margin: "0 0 6px" }}>Tu calificación</p>
             <Estrellas valor={estrellas} onChange={setEstrellas} size={24} />
           </div>
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu nombre" maxLength={40}
@@ -1166,8 +1165,8 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
   return (
     <div style={{ minHeight: "100vh", background: "#FFFBFC", fontFamily: "'DM Sans', sans-serif" }}>
       <header style={{ position: "sticky", top: 0, zIndex: 100, background: "white", borderBottom: "1px solid #F5E6EE", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 8px rgba(139,26,77,0.06)" }}>
-        <button onClick={onVolver} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#8B1A4D", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← Volver</button>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#8B1A4D", fontStyle: "italic", fontWeight: 700 }}>Curvy Vup</span>
+        <button onClick={onVolver} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--c-vino)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← Volver</button>
+        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: "var(--c-vino)", fontStyle: "italic", fontWeight: 700 }}>Curvy Vup</span>
         <div style={{ width: 80 }} />
       </header>
 
@@ -1233,7 +1232,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
               <a href={`${base}&text=${textoPedido}`} target="_blank" rel="noopener noreferrer"
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: 16, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "white", borderRadius: 16, fontSize: 16, fontWeight: 800, textDecoration: "none", boxShadow: "0 6px 20px rgba(194,24,91,0.3)" }}>
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: 16, background: "linear-gradient(135deg, var(--c-vino), #C2185B)", color: "white", borderRadius: 16, fontSize: 16, fontWeight: 800, textDecoration: "none", boxShadow: "0 6px 20px rgba(194,24,91,0.3)" }}>
                 <WhatsappIcon size={20} /> Realizar Pedido
               </a>
               <a href={`${base}&text=${textoAyuda}`} target="_blank" rel="noopener noreferrer"
@@ -1254,9 +1253,9 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
             `}</style>
             <div className="garantias-grid">
               {[
-                { icono: "🚚", titulo: "Envíos", desc: "A todo Colombia" },
+                { icono: "🚚", titulo: "Envíos", desc: "A toda Colombia" },
                 { icono: "🔄", titulo: "Cambios", desc: "5 días hábiles" },
-                { icono: "📏", titulo: "Tallas", desc: "OXL al 4XL", onClick: () => setGuiaAbierta(true) },
+                { icono: "📏", titulo: "Tallas", desc: "S a 4XL", onClick: () => setGuiaAbierta(true) },
                 { icono: "🎧", titulo: "Atención", desc: "Personalizada 24/7" },
               ].map((it) => (
                 <div key={it.titulo} onClick={it.onClick} className="garantias-item" style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "#FFFBFC", border: "1px solid #F5E6EE", borderRadius: 14, padding: 14, cursor: it.onClick ? "pointer" : "default" }}>
@@ -1275,7 +1274,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
 
         <ResenasProducto prendaId={prenda?.id} />
 
-        <div style={{ background: "linear-gradient(135deg, #8B1A4D, #C2185B)", borderRadius: 20, padding: "24px 32px", marginTop: 32, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ background: "linear-gradient(135deg, var(--c-vino), #C2185B)", borderRadius: 20, padding: "24px 32px", marginTop: 32, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
             <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 2, margin: "0 0 6px" }}>¿TE GUSTÓ ESTA PRENDA?</p>
             <p style={{ color: "white", fontSize: 20, fontWeight: 800, margin: 0, fontFamily: "'Playfair Display', serif" }}>¡Pídela antes de que se agote! 💕</p>
@@ -1287,7 +1286,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
           <div style={{ marginTop: 48 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div>
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>También te puede gustar 💕</h2>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>También te puede gustar</h2>
                 <p style={{ fontSize: 11, color: "#999", margin: 0, letterSpacing: 1, textTransform: "uppercase" }}>PRENDAS SELECCIONADAS PARA TI</p>
               </div>
               <button onClick={onVolver} style={{ background: "none", border: "2px solid #C2185B", color: "#C2185B", borderRadius: 20, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Ver todo →</button>
@@ -1300,7 +1299,7 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                   <div key={p.id} onClick={() => { onCargarProducto?.(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="tarjeta-hover"
                     style={{ background: "white", borderRadius: 16, overflow: "hidden", cursor: "pointer", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", position: "relative" }}>
                     {!ofertaVigente(p) && (i === 0 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🔥 POPULAR</div>
-                      : i === 1 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#8B1A4D", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div> : null)}
+                      : i === 1 ? <div style={{ position: "absolute", top: 10, left: 10, background: "var(--c-vino)", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div> : null)}
                     {s <= 2 && s > 0 && <div style={{ position: "absolute", top: 10, left: i < 2 ? "auto" : 10, right: i < 2 ? 10 : "auto", background: "#FCE4EC", color: "#C2185B", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 20, zIndex: 1, border: "1px solid #F48FB1" }}>⚠️ ÚLTIMA</div>}
                     <div className="img-hover-wrap" style={{ position: "relative", paddingTop: "120%", overflow: "hidden", background: "#FAFAFA" }}>
                       {img && <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />}
@@ -1391,7 +1390,7 @@ function CarritoDrawer({ carrito, setCarrito, onCerrar, onEnviar }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#1C0F17", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.descripcion}</p>
                 <p style={{ margin: "3px 0 0", fontSize: 11, color: "#9E7A8E" }}>Talla {item.talla} · {item.cantidad} {item.cantidad === 1 ? "ud" : "uds"}</p>
-                <p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 800, color: "#8B1A4D" }}>{fmt(item.precio * item.cantidad)}</p>
+                <p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 800, color: "var(--c-vino)" }}>{fmt(item.precio * item.cantidad)}</p>
               </div>
               <button onClick={() => setCarrito((c) => c.filter((_, j) => j !== i))} style={{ background: "#FFEBEE", color: "#C62828", border: "none", width: 32, height: 32, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
             </div>
@@ -1399,7 +1398,7 @@ function CarritoDrawer({ carrito, setCarrito, onCerrar, onEnviar }) {
         </div>
         <div style={{ padding: "20px 24px", borderTop: "1px solid #EDD9E8" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, fontSize: 17, fontWeight: 800, color: "#1C0F17" }}>
-            <span>Total estimado</span><span style={{ color: "#8B1A4D" }}>{fmt(total)}</span>
+            <span>Total estimado</span><span style={{ color: "var(--c-vino)" }}>{fmt(total)}</span>
           </div>
           <button onClick={onEnviar} disabled={!carrito.length} style={{ width: "100%", padding: 16, borderRadius: 14, background: "#25D366", color: "#fff", border: "none", fontSize: 15, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
             📱 Enviar pedido por WhatsApp
@@ -1417,15 +1416,17 @@ export default function CatalogoPublico() {
   const [busqueda, setBusqueda] = useState("");
   const [categoriaActiva, setCategoriaActiva] = useState("todas");
   const [tallasActivas, setTallasActivas] = useState([]);
+  const [precioMin, setPrecioMin] = useState("");
+  const [precioMax, setPrecioMax] = useState("");
   const [carrito, setCarrito] = useState([]);
   const [verCarrito, setVerCarrito] = useState(false);
   const [detalle, setDetalle] = useState(null);
-  const [liked, setLiked] = useState(new Set());
   const [categoriasFS, setCategoriasFS] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [configOfertas, setConfigOfertas] = useState(null);
   const [ordenActivo, setOrdenActivo] = useState("recientes");
   const [mostrarCatalogo, setMostrarCatalogo] = useState(false);
+  const [mostrarFiltrosMovil, setMostrarFiltrosMovil] = useState(false);
   const [cantidadVisible, setCantidadVisible] = useState(12);
   const [cargandoMas, setCargandoMas] = useState(false);
   const pagRef = useRef({ hayMas: false, cargandoMas: false });
@@ -1508,10 +1509,9 @@ export default function CatalogoPublico() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const toggleLike = (id) => setLiked((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleTalla = (t) => setTallasActivas((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
-  const limpiarFiltros = () => { setCategoriaActiva("todas"); setTallasActivas([]); setOrdenActivo("recientes"); };
-  const hayFiltrosActivos = categoriaActiva !== "todas" || tallasActivas.length > 0;
+  const limpiarFiltros = () => { setCategoriaActiva("todas"); setTallasActivas([]); setOrdenActivo("recientes"); setPrecioMin(""); setPrecioMax(""); };
+  const hayFiltrosActivos = categoriaActiva !== "todas" || tallasActivas.length > 0 || precioMin !== "" || precioMax !== "";
 
   const conFoto = useMemo(() => prendas.filter(tieneImagen), [prendas]);
 
@@ -1523,8 +1523,10 @@ export default function CatalogoPublico() {
       : p.categoria?.toLowerCase() === categoriaActiva.toLowerCase();
     const coincideBusq = (nombreDe(p) || "").toLowerCase().includes(busqueda.toLowerCase());
     const coincideTalla = tallasActivas.length === 0 || tallasActivas.some((t) => p.stockPorTalla ? (Number(p.stockPorTalla[t]) || 0) > 0 : p.talla === t);
-    return coincideCat && coincideTalla && coincideBusq;
-  }), [prendas, categoriaActiva, tallasActivas, busqueda]);
+    const precio = precioEfectivo(p);
+    const coincidePrecio = (precioMin === "" || precio >= Number(precioMin)) && (precioMax === "" || precio <= Number(precioMax));
+    return coincideCat && coincideTalla && coincideBusq && coincidePrecio;
+  }), [prendas, categoriaActiva, tallasActivas, busqueda, precioMin, precioMax]);
 
   const ordenadas = useMemo(() => {
     const copia = [...filtradas];
@@ -1566,7 +1568,9 @@ export default function CatalogoPublico() {
   const paraInstagram = todasConFoto.slice(0, 6);
 
   const irACatalogo = (cat) => {
-    if (cat) {
+    // cat solo si es un string real: evita que un SyntheticEvent (cuando esta función
+    // se pasa directo a onClick sin envolver) se cuele como categoría.
+    if (typeof cat === "string" && cat) {
       setCategoriaActiva(cat);
       setOrdenActivo("recientes");
       setTallasActivas([]);
@@ -1589,9 +1593,9 @@ export default function CatalogoPublico() {
   return (
     <div style={{ minHeight: "100vh", background: "#FAF7F4", fontFamily: "'DM Sans', sans-serif" }}>
       {cantidadCarrito > 0 && !verCarrito && (
-        <button onClick={() => setVerCarrito(true)} className="animate" style={{ position: "fixed", bottom: 28, right: 20, zIndex: 800, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "#fff", border: "none", borderRadius: 50, padding: "14px 22px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 28px rgba(139,26,77,0.4)", cursor: "pointer", fontWeight: 700, fontSize: 15 }}>
+        <button onClick={() => setVerCarrito(true)} className="animate" style={{ position: "fixed", bottom: 28, right: 20, zIndex: 800, background: "linear-gradient(135deg, var(--c-vino), #C2185B)", color: "#fff", border: "none", borderRadius: 50, padding: "14px 22px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 28px rgba(139,26,77,0.4)", cursor: "pointer", fontWeight: 700, fontSize: 15 }}>
           <CartIcon size={20} /> Mi pedido
-          <span style={{ background: "#fff", color: "#8B1A4D", borderRadius: 20, padding: "2px 8px", fontSize: 13, fontWeight: 800 }}>{cantidadCarrito}</span>
+          <span style={{ background: "#fff", color: "var(--c-vino)", borderRadius: 20, padding: "2px 8px", fontSize: 13, fontWeight: 800 }}>{cantidadCarrito}</span>
         </button>
       )}
 
@@ -1602,49 +1606,101 @@ export default function CatalogoPublico() {
 
       <HeroCarousel slides={heroSlides} onVerCatalogo={irACatalogo} />
 
-      <SeccionGridEditorial titulo="🌸 Lo Más Nuevo" prendas={recientes} onCardClick={abrirProducto} onVerTodas={irACatalogo} mostrarNombre mostrarContador={false} />
+      <SeccionGridEditorial titulo="Lo Más Nuevo" prendas={recientes} onCardClick={abrirProducto} onVerTodas={() => irACatalogo()} mostrarNombre mostrarContador={false} />
 
-      <SeccionGridEditorial titulo="Ofertas de la Semana 🔥" prendas={enOfertas} banner={configOfertas} bg="linear-gradient(135deg, #FCE8EF 0%, #FBEFF3 100%)" onCardClick={abrirProducto} onVerTodas={() => irACatalogo("ofertas")} verTodasTexto="Ver todas las ofertas →" />
+      <SeccionGridEditorial titulo="Ofertas de la Semana" prendas={enOfertas} banner={configOfertas} bg="linear-gradient(135deg, #FCE8EF 0%, #FBEFF3 100%)" onCardClick={abrirProducto} onVerTodas={() => irACatalogo("ofertas")} verTodasTexto="Ver todas las ofertas →" />
 
       <SeccionCategorias prendas={prendas} categoriaSel={categoriaActiva} onSelect={(c) => { setCategoriaActiva(c); setTallasActivas([]); }} onVerCatalogo={irACatalogo} categoriasFS={categoriasFS} />
 
       {mostrarCatalogo && (
-        <div id="catalogo-section" style={{ background: "#FAF7F4", animation: "fadeInUp 0.4s ease" }}>
-          <BarraFiltros categoriasFS={categoriasFS} categoriaActiva={categoriaActiva} setCategoriaActiva={setCategoriaActiva} tallasActivas={tallasActivas} toggleTalla={toggleTalla}
-            ordenActivo={ordenActivo} setOrdenActivo={setOrdenActivo} limpiarFiltros={limpiarFiltros} totalResultados={ordenadas.length} hayFiltrosActivos={hayFiltrosActivos} />
-          <div style={{ maxWidth: 1200, margin: "0 auto", paddingBottom: 60 }}>
-            {ordenadas.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 20px", margin: "0 16px", background: "#fff", borderRadius: 24, border: "1px dashed #EDD9E8" }}>
-                <p style={{ fontSize: 40, margin: "0 0 12px" }}>💕</p>
-                <p style={{ fontWeight: 700, fontSize: 16, color: "#1C0F17" }}>No encontramos prendas</p>
-                <p style={{ fontSize: 13, color: "#9E7A8E", marginTop: 4 }}>Intenta con otros filtros</p>
-              </div>
-            ) : (
-              <>
-                <div className={categoriaActiva === "ofertas" ? "of-editorial-grid of-gutter" : "catalogo-grid"}>
-                  {ordenadas.slice(0, cantidadVisible).map((p) => (
-                    categoriaActiva === "ofertas"
-                      ? <TarjetaEditorial key={p.id} p={p} onClick={() => abrirProducto(p)} />
-                      : <ProductoTarjetaGrid key={p.id} p={p} liked={liked.has(p.id)} onToggleLike={toggleLike} onClick={() => abrirProducto(p)} />
-                  ))}
-                </div>
-                {cargandoMas && (
-                  <div style={{ textAlign: "center", padding: 24, color: "#C2185B", fontSize: 14, fontWeight: 600 }}>
-                    <div style={{ width: 32, height: 32, border: "3px solid #FCE4EC", borderTop: "3px solid #C2185B", borderRadius: "50%", margin: "0 auto 8px", animation: "spin 0.8s linear infinite" }} />
-                    Cargando más prendas...
-                  </div>
-                )}
-                {!hayMasParaCargar && ordenadas.length > 12 && !cargandoMas && (
-                  <div style={{ textAlign: "center", padding: 24, color: "#999", fontSize: 13 }}>✨ Has visto todas las prendas</div>
-                )}
-              </>
-            )}
+        <div id="catalogo-section" style={{ background: "#fff", animation: "fadeInUp 0.4s ease" }}>
+          <div className="catalogo-container" style={{ padding: "20px 16px 0" }}>
+            <nav style={{ fontSize: 12, color: "#999", fontFamily: "'DM Sans', sans-serif" }}>
+              <button onClick={() => { setMostrarCatalogo(false); window.scrollTo({ top: 0, behavior: "smooth" }); }} style={{ background: "none", border: "none", padding: 0, color: "#999", cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}>Inicio</button>
+              {" / "}
+              <span style={{ color: categoriaActiva === "todas" ? "#1a1a1a" : "#999" }}>Catálogo</span>
+              {categoriaActiva !== "todas" && (
+                <>
+                  {" / "}
+                  <span style={{ color: "#1a1a1a", fontWeight: 600 }}>{categoriaActiva === "ofertas" ? "Ofertas" : categoriaActiva === "otras" ? "Otras" : categoriaActiva}</span>
+                </>
+              )}
+            </nav>
           </div>
+
+          <div className="catalogo-layout catalogo-container">
+            <aside className="catalogo-sidebar-desktop">
+              <PanelFiltros categoriasFS={categoriasFS} categoriaActiva={categoriaActiva} setCategoriaActiva={setCategoriaActiva} tallasActivas={tallasActivas} toggleTalla={toggleTalla}
+                precioMin={precioMin} setPrecioMin={setPrecioMin} precioMax={precioMax} setPrecioMax={setPrecioMax} hayFiltrosActivos={hayFiltrosActivos} limpiarFiltros={limpiarFiltros} />
+            </aside>
+
+            <div className="catalogo-main">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <button onClick={() => setMostrarFiltrosMovil(true)} className="catalogo-btn-filtrar" style={{ padding: "8px 16px", borderRadius: 4, border: "1px solid #DDD", background: "#fff", color: "#1a1a1a", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                    Filtrar{hayFiltrosActivos ? " •" : ""}
+                  </button>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: "#333", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                    Ordenar por
+                    <select value={ordenActivo} onChange={(e) => setOrdenActivo(e.target.value)}
+                      style={{ width: "auto", border: "none", background: "transparent", fontSize: 13, color: "#1a1a1a", fontWeight: 600, cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none", MozAppearance: "none", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>
+                      <option value="recientes">Recientes</option>
+                      <option value="menor">Menor precio</option>
+                      <option value="mayor">Mayor precio</option>
+                    </select>
+                    <span style={{ fontSize: 10 }}>⌄</span>
+                  </label>
+                </div>
+                <span style={{ fontSize: 12, color: "#999", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>{ordenadas.length} prenda{ordenadas.length === 1 ? "" : "s"}</span>
+              </div>
+
+              {ordenadas.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "60px 20px", background: "#FAFAFA", border: "1px dashed #DDD" }}>
+                  <p style={{ fontSize: 40, margin: "0 0 12px" }}>💕</p>
+                  <p style={{ fontWeight: 700, fontSize: 16, color: "#1C0F17" }}>No encontramos prendas</p>
+                  <p style={{ fontSize: 13, color: "#9E7A8E", marginTop: 4 }}>Intenta con otros filtros</p>
+                </div>
+              ) : (
+                <>
+                  <div className="catalogo-grid-v2">
+                    {ordenadas.slice(0, cantidadVisible).map((p) => (
+                      <TarjetaCatalogo key={p.id} p={p} onClick={() => abrirProducto(p)} />
+                    ))}
+                  </div>
+                  {cargandoMas && (
+                    <div style={{ textAlign: "center", padding: 24, color: "#C2185B", fontSize: 14, fontWeight: 600 }}>
+                      <div style={{ width: 32, height: 32, border: "3px solid #FCE4EC", borderTop: "3px solid #C2185B", borderRadius: "50%", margin: "0 auto 8px", animation: "spin 0.8s linear infinite" }} />
+                      Cargando más prendas...
+                    </div>
+                  )}
+                  {!hayMasParaCargar && ordenadas.length > 12 && !cargandoMas && (
+                    <div style={{ textAlign: "center", padding: 24, color: "#999", fontSize: 13 }}>✨ Has visto todas las prendas</div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {mostrarFiltrosMovil && (
+            <div className="catalogo-filtros-overlay" onClick={() => setMostrarFiltrosMovil(false)}>
+              <div className="catalogo-filtros-panel" onClick={(e) => e.stopPropagation()}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1a1a1a", fontFamily: "'DM Sans', sans-serif" }}>Filtrar</h3>
+                  <button onClick={() => setMostrarFiltrosMovil(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 4 }}>✕</button>
+                </div>
+                <PanelFiltros categoriasFS={categoriasFS} categoriaActiva={categoriaActiva} setCategoriaActiva={setCategoriaActiva} tallasActivas={tallasActivas} toggleTalla={toggleTalla}
+                  precioMin={precioMin} setPrecioMin={setPrecioMin} precioMax={precioMax} setPrecioMax={setPrecioMax} hayFiltrosActivos={hayFiltrosActivos} limpiarFiltros={limpiarFiltros} />
+                <button onClick={() => setMostrarFiltrosMovil(false)} style={{ width: "100%", marginTop: 20, padding: 14, background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 4, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  Ver {ordenadas.length} resultado{ordenadas.length === 1 ? "" : "s"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       <SeccionMasPedidas prendas={masPedidas} onCardClick={abrirProducto} />
-      <SeccionCTA onVerCatalogo={irACatalogo} />
+      <SeccionCTA onVerCatalogo={() => irACatalogo()} />
       <SeccionInstagram fotos={paraInstagram} />
       <Footer />
       <BotonWhatsappFlotante />
@@ -1655,10 +1711,30 @@ export default function CatalogoPublico() {
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .catalogo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 20px 16px; }
-        @media (min-width: 640px) { .catalogo-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (min-width: 1024px) { .catalogo-grid { grid-template-columns: repeat(4, 1fr); padding: 24px 32px; } }
-        @media (min-width: 1400px) { .catalogo-grid { grid-template-columns: repeat(5, 1fr); } }
+        /* Contenedor del catálogo: más ancho en pantallas grandes para no dejar tanto margen muerto a los costados */
+        .catalogo-container { max-width: 1400px; margin: 0 auto; }
+        @media (min-width: 1440px) { .catalogo-container { max-width: 1680px; } }
+
+        /* Layout del catálogo: sidebar fija a la izquierda (desktop) + columna principal */
+        .catalogo-layout { display: flex; flex-direction: column; gap: 0; padding: 16px 16px 60px; }
+        .catalogo-sidebar-desktop { display: none; }
+        .catalogo-btn-filtrar { display: inline-flex; }
+        .catalogo-main { flex: 1; min-width: 0; }
+        @media (min-width: 768px) {
+          .catalogo-layout { flex-direction: row; align-items: flex-start; gap: 40px; padding: 24px 32px 60px; }
+          .catalogo-sidebar-desktop { display: block; width: 220px; flex-shrink: 0; position: sticky; top: 100px; }
+          .catalogo-btn-filtrar { display: none; }
+        }
+
+        /* Mobile (<768) queda igual: 2 columnas, sin tocar. Desktop 768-1439: 3 col. Desktop grande 1440+: 4 col, gap más compacto. */
+        .catalogo-grid-v2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 14px; }
+        @media (min-width: 768px) { .catalogo-grid-v2 { grid-template-columns: repeat(3, 1fr); gap: 28px 20px; } }
+        @media (min-width: 1440px) { .catalogo-grid-v2 { grid-template-columns: repeat(4, 1fr); gap: 24px 18px; } }
+
+        .catalogo-filtros-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9000; }
+        .catalogo-filtros-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 85%; max-width: 340px; background: #fff; z-index: 9001; overflow-y: auto; padding: 20px; animation: catalogoPanelIn 0.25s ease; }
+        @keyframes catalogoPanelIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @media (min-width: 768px) { .catalogo-filtros-overlay, .catalogo-filtros-panel { display: none; } }
 
         /* Grid exclusivo de "Ofertas de la Semana": fijo 2 (mobile) / 4 (desktop), sin auto-fill/minmax, sin max-width que la encoja */
         .of-editorial-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px 16px; padding-bottom: 8px; }

@@ -27,7 +27,7 @@ export default function Ventas({ prendas, setPrendas, ventas, setVentas, factura
   const [generandoPDF, setGenerandoPDF]         = useState(false);
 
   const prendaSel  = prendas.find(p => p.codigo === codigoSel);
-  const ordenTallas = ["XS","S","M","L","XL","0XL","1XL","2XL","3XL","4XL","5XL"];
+  const ordenTallas = ["XS","S","M","L","XL","2XL","3XL","4XL"];
   const showToast  = (msg, tipo = "ok") => { setToast({ msg, tipo }); setTimeout(() => setToast(null), 3000); };
 
   // ── COMPATIBILIDAD CON DATOS VIEJOS ─────────────────────────────────────

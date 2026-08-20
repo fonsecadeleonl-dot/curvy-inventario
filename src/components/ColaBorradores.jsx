@@ -3,7 +3,7 @@ import { db } from "../firebase";
 import { collection, getDocs, updateDoc, deleteDoc, doc, addDoc, getDoc } from "firebase/firestore";
 import { fmt, Icon } from "../utils.jsx";
 
-const ORDEN_TALLAS = ["XS","S","M","L","XL","0XL","1XL","2XL","3XL","4XL","5XL","Única"];
+const ORDEN_TALLAS = ["XS","S","M","L","XL","2XL","3XL","4XL","Única"];
 const CATEGORIAS   = ["Blusa","Camisa","Camiseta","Vestido","Falda","Pantalón","Legging","Conjunto","Chaqueta","Short","Otra"];
 
 export default function ColaBorradores({ setPrendas, onCerrar }) {

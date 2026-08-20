@@ -34,38 +34,90 @@ function comprimirImagenAncha(file) {
   });
 }
 
+// ── compresor angosto, para la versión mobile del banner ──
+// Mismo criterio que comprimirImagenAncha pero tope de 900px: la foto mobile
+// nunca necesita más resolución que eso, así pesa menos que la de desktop.
+function comprimirImagenMobile(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 900 / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        const formato = SOPORTA_WEBP ? "image/webp" : "image/jpeg";
+        let calidad = 0.88;
+        let resultado = canvas.toDataURL(formato, calidad);
+        while (resultado.length > 500 * 1024 * 1.37 && calidad > 0.7) {
+          calidad -= 0.05;
+          resultado = canvas.toDataURL(formato, calidad);
+        }
+        resolve(resultado);
+      };
+      img.src = e.target.result;
+    };
+  });
+}
+
 const SLIDE_DEFAULT = {
   badge: "🌸 Nueva colección",
   titulo: "Tu cuerpo, tu moda",
-  subtitulo: "Tallas OXL al 4XL · Envíos a todo Colombia",
+  subtitulo: "Tallas S a 4XL · Envíos a toda Colombia",
   textoBton: "Ver catálogo →",
   accion: "scroll",
   accionLink: "",
   activo: true,
   imagen: "",
+  imagenMobile: "",
   posicion: { x: 50, y: 50 },
+  posicionMobile: { x: 50, y: 20 },
 };
 
 function VistaPreviaSlide({ slide }) {
+  const imagenMobileEfectiva = slide.imagenMobile || slide.imagen;
   return (
-    <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/6", background: slide.imagen ? "transparent" : "linear-gradient(135deg, #8B1A4D, #C2185B)", flexShrink: 0 }}>
-      {slide.imagen && (
-        <img src={slide.imagen} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0, objectPosition: `${slide.posicion?.x ?? 50}% ${slide.posicion?.y ?? 50}%` }} />
-      )}
-      <div style={{ position: "absolute", inset: 0, background: slide.imagen ? "linear-gradient(to right, rgba(139,26,77,0.78) 0%, rgba(139,26,77,0.35) 60%, rgba(0,0,0,0.05) 100%)" : "rgba(0,0,0,0.08)" }} />
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 24px", gap: 5 }}>
-        {slide.badge && (
-          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.85)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, background: "rgba(255,255,255,0.18)", borderRadius: 20, padding: "2px 10px", width: "fit-content" }}>
-            {slide.badge}
-          </span>
-        )}
-        <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 800, color: "#fff", margin: 0, lineHeight: 1.2 }}>{slide.titulo || "Título"}</p>
-        <p style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", margin: 0 }}>{slide.subtitulo || "Subtítulo"}</p>
-        {slide.textoBton && (
-          <span style={{ background: "#fff", color: "#8B1A4D", borderRadius: 20, padding: "4px 12px", fontSize: 10, fontWeight: 800, width: "fit-content", marginTop: 2 }}>
-            {slide.textoBton}
-          </span>
-        )}
+    <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+      <div style={{ flex: "1 1 320px" }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: "#9E7A8E", textTransform: "uppercase", letterSpacing: 0.8, margin: "0 0 6px" }}>Desktop</p>
+        <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", aspectRatio: "16/6", background: slide.imagen ? "transparent" : "linear-gradient(135deg, #8B1A4D, #C2185B)" }}>
+          {slide.imagen && (
+            <img src={slide.imagen} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0, objectPosition: `${slide.posicion?.x ?? 50}% ${slide.posicion?.y ?? 50}%` }} />
+          )}
+          <div style={{ position: "absolute", inset: 0, background: slide.imagen ? "linear-gradient(to right, rgba(139,26,77,0.78) 0%, rgba(139,26,77,0.35) 60%, rgba(0,0,0,0.05) 100%)" : "rgba(0,0,0,0.08)" }} />
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 24px", gap: 5 }}>
+            {slide.badge && (
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.85)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, background: "rgba(255,255,255,0.18)", borderRadius: 20, padding: "2px 10px", width: "fit-content" }}>
+                {slide.badge}
+              </span>
+            )}
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 800, color: "#fff", margin: 0, lineHeight: 1.2 }}>{slide.titulo || "Título"}</p>
+            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", margin: 0 }}>{slide.subtitulo || "Subtítulo"}</p>
+            {slide.textoBton && (
+              <span style={{ background: "#fff", color: "#8B1A4D", borderRadius: 20, padding: "4px 12px", fontSize: 10, fontWeight: 800, width: "fit-content", marginTop: 2 }}>
+                {slide.textoBton}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flex: "0 0 140px" }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: "#9E7A8E", textTransform: "uppercase", letterSpacing: 0.8, margin: "0 0 6px" }}>
+          Mobile {!slide.imagenMobile && "(usando la de desktop)"}
+        </p>
+        <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", aspectRatio: "9/16", background: imagenMobileEfectiva ? "transparent" : "linear-gradient(135deg, #8B1A4D, #C2185B)" }}>
+          {imagenMobileEfectiva && (
+            <img src={imagenMobileEfectiva} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0, objectPosition: `${(slide.imagenMobile ? slide.posicionMobile?.x : slide.posicion?.x) ?? 50}% ${(slide.imagenMobile ? slide.posicionMobile?.y : slide.posicion?.y) ?? 50}%` }} />
+          )}
+          <div style={{ position: "absolute", inset: 0, background: imagenMobileEfectiva ? "linear-gradient(to top, rgba(28,22,20,0.55) 0%, transparent 55%)" : "rgba(0,0,0,0.08)" }} />
+          <div style={{ position: "absolute", left: 8, right: 8, bottom: 8 }}>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 800, color: "#fff", margin: 0, lineHeight: 1.2 }}>{slide.titulo || "Título"}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -143,10 +195,13 @@ function CampoTexto({ label, valor, onChange, placeholder }) {
 function FormularioSlide({ inicial, onSave, onCancel, guardando }) {
   const [slide, setSlide] = useState({ ...SLIDE_DEFAULT, posicion: { x: 50, y: 50 }, ...inicial });
   const [subiendo, setSubiendo] = useState(false);
+  const [subiendoMobile, setSubiendoMobile] = useState(false);
   const inputFileRef = useRef();
+  const inputFileMobileRef = useRef();
 
   const set = (campo, valor) => setSlide((s) => ({ ...s, [campo]: valor }));
   const setPosicion = (pos) => setSlide((s) => ({ ...s, posicion: pos }));
+  const setPosicionMobile = (pos) => setSlide((s) => ({ ...s, posicionMobile: pos }));
 
   const onArchivo = async (e) => {
     const file = e.target.files?.[0];
@@ -154,6 +209,14 @@ function FormularioSlide({ inicial, onSave, onCancel, guardando }) {
     setSubiendo(true);
     try { set("imagen", await comprimirImagenAncha(file)); }
     finally { setSubiendo(false); }
+  };
+
+  const onArchivoMobile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSubiendoMobile(true);
+    try { set("imagenMobile", await comprimirImagenMobile(file)); }
+    finally { setSubiendoMobile(false); }
   };
 
   return (
@@ -164,7 +227,7 @@ function FormularioSlide({ inicial, onSave, onCancel, guardando }) {
       </div>
 
       <div>
-        <label style={{ fontSize: 12, fontWeight: 700, color: "#7B4F6A", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>📷 Imagen de fondo</label>
+        <label style={{ fontSize: 12, fontWeight: 700, color: "#7B4F6A", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>📷 Imagen desktop</label>
         <p style={{ fontSize: 11, color: "#9E7A8E", margin: "0 0 10px" }}>Recomendado: imagen horizontal, mínimo 1200×600px</p>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <button onClick={() => inputFileRef.current?.click()} disabled={subiendo}
@@ -183,8 +246,33 @@ function FormularioSlide({ inicial, onSave, onCancel, guardando }) {
 
       {slide.imagen && (
         <div>
-          <label style={{ fontSize: 12, fontWeight: 700, color: "#7B4F6A", display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>🎯 Posición de encuadre</label>
+          <label style={{ fontSize: 12, fontWeight: 700, color: "#7B4F6A", display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>🎯 Posición de encuadre — desktop</label>
           <PosicionadorImagen imagenUrl={slide.imagen} posicion={slide.posicion ?? { x: 50, y: 50 }} onChange={setPosicion} />
+        </div>
+      )}
+
+      <div>
+        <label style={{ fontSize: 12, fontWeight: 700, color: "#7B4F6A", display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 }}>📱 Imagen mobile</label>
+        <p style={{ fontSize: 11, color: "#9E7A8E", margin: "0 0 10px" }}>Opcional — recomendado: imagen vertical/cuadrada. Sin subir, mobile usa la de desktop.</p>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <button onClick={() => inputFileMobileRef.current?.click()} disabled={subiendoMobile}
+            style={{ padding: "10px 18px", borderRadius: 12, background: "#FDF0F6", border: "1.5px dashed #C2185B", color: "#8B1A4D", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="image" size={15} /> {subiendoMobile ? "Procesando..." : slide.imagenMobile ? "Cambiar imagen" : "Subir imagen"}
+          </button>
+          {slide.imagenMobile && (
+            <button onClick={() => set("imagenMobile", "")} style={{ padding: "10px 14px", borderRadius: 12, background: "#FFEBEE", border: "none", color: "#C62828", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              Quitar imagen
+            </button>
+          )}
+          {!slide.imagenMobile && <span style={{ fontSize: 12, color: "#9E7A8E" }}>Sin imagen propia → usa la de desktop como respaldo</span>}
+        </div>
+        <input ref={inputFileMobileRef} type="file" accept="image/*" onChange={onArchivoMobile} style={{ display: "none" }} />
+      </div>
+
+      {slide.imagenMobile && (
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 700, color: "#7B4F6A", display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>🎯 Posición de encuadre — mobile</label>
+          <PosicionadorImagen imagenUrl={slide.imagenMobile} posicion={slide.posicionMobile ?? { x: 50, y: 20 }} onChange={setPosicionMobile} />
         </div>
       )}
 
@@ -315,7 +403,7 @@ function BannerTab() {
   };
 
   const alternarActivo = async (slide) => {
-    if (!slide.activo && activos >= 5) { alert("Máximo 5 slides activos. Desactiva uno antes de activar otro."); return; }
+    if (!slide.activo && activos >= 2) { alert("Máximo 2 slides activos. Desactiva uno antes de activar otro."); return; }
     await updateDoc(doc(db, "heroSlides", slide.id), { activo: !slide.activo });
     await recargar();
   };
@@ -355,7 +443,7 @@ function BannerTab() {
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8, gap: 12 }}>
           <div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#1C0F17", margin: 0 }}>🖼️ Banner Principal</h2>
-            <p style={{ fontSize: 13, color: "#9E7A8E", marginTop: 4 }}>Gestiona las imágenes del slider · {activos}/5 activos</p>
+            <p style={{ fontSize: 13, color: "#9E7A8E", marginTop: 4 }}>Gestiona las imágenes del slider · {activos}/2 activos</p>
           </div>
           <button onClick={() => setEditando({ ...SLIDE_DEFAULT })}
             style={{ padding: "10px 16px", borderRadius: 14, background: "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -408,7 +496,7 @@ function BannerTab() {
         )}
 
         <p style={{ fontSize: 12, color: "#9E7A8E", marginTop: 20, padding: "12px 16px", background: "#FFF5F7", borderRadius: 12, border: "1px solid #F3E4EF" }}>
-          💡 <strong>Tip:</strong> Usa imágenes horizontales de mínimo 1200×600px. Sin imagen → fondo degradado rosa/vino automático. Máximo 5 slides activos.
+          💡 <strong>Tip:</strong> Usa imágenes horizontales de mínimo 1200×600px. Sin imagen → fondo degradado rosa/vino automático. Máximo 2 slides activos.
         </p>
       </div>
       <Toast msg={msgOk} />
@@ -534,6 +622,138 @@ function CategoriasTab() {
         style={{ width: "100%", padding: 16, background: guardando ? "#ccc" : "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "white", border: "none", borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: guardando ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
         {guardando ? "⏳ Guardando..." : "🚀 Guardar y publicar"}
       </button>
+    </div>
+  );
+}
+
+// ── MIGRACIÓN ÚNICA: fusiona stock de 0XL/1XL dentro de XL y limpia esas
+// claves (y 5XL, sin stock) de todas las prendas. Borrar este tab y
+// MigracionTallasTab una vez ejecutada — es una limpieza de una sola vez.
+const CLAVES_A_ELIMINAR = ["0XL", "1XL", "5XL"];
+
+function MigracionTallasTab() {
+  const [plan, setPlan] = useState(null);
+  const [analizando, setAnalizando] = useState(false);
+  const [ejecutando, setEjecutando] = useState(false);
+  const [msgOk, setMsgOk] = useState("");
+  const [msgError, setMsgError] = useState("");
+
+  const notificar = (msg, error = false) => {
+    if (error) { setMsgError(msg); setTimeout(() => setMsgError(""), 5000); }
+    else { setMsgOk(msg); setTimeout(() => setMsgOk(""), 4000); }
+  };
+
+  const analizar = async () => {
+    setAnalizando(true);
+    try {
+      const snap = await getDocs(collection(db, "prendas"));
+      const afectadas = [];
+      snap.docs.forEach((d) => {
+        const p = d.data();
+        const spt = p.stockPorTalla || {};
+        const claves = CLAVES_A_ELIMINAR.filter((c) => c in spt);
+        if (claves.length === 0) return;
+        const extra = (Number(spt["0XL"]) || 0) + (Number(spt["1XL"]) || 0);
+        const xlAntes = Number(spt.XL) || 0;
+        afectadas.push({
+          id: d.id, codigo: p.codigo, nombre: nombreDe(p),
+          spt, historial: p.historial || [],
+          "0XL": Number(spt["0XL"]) || 0, "1XL": Number(spt["1XL"]) || 0, "5XL": Number(spt["5XL"]) || 0,
+          xlAntes, xlDespues: xlAntes + extra, extra,
+        });
+      });
+      setPlan(afectadas);
+    } catch (e) {
+      notificar("❌ Error al analizar: " + e.message, true);
+    } finally {
+      setAnalizando(false);
+    }
+  };
+
+  const ejecutar = async () => {
+    if (!auth.currentUser) { notificar("❌ Sin sesión activa. Recarga la página e inicia sesión.", true); return; }
+    if (!plan || plan.length === 0) return;
+    setEjecutando(true);
+    try {
+      for (const item of plan) {
+        const nuevoSPT = { ...item.spt };
+        CLAVES_A_ELIMINAR.forEach((c) => delete nuevoSPT[c]);
+        if (item.extra > 0) nuevoSPT.XL = item.xlDespues;
+        const nuevoTotal = Object.values(nuevoSPT).reduce((s, v) => s + Number(v), 0);
+
+        const datos = { stockPorTalla: nuevoSPT, stock: nuevoTotal };
+        if (item.extra > 0) {
+          const fechaAjuste = new Date().toISOString();
+          const tallasEntrada = { XL: item.extra };
+          if (item["0XL"] > 0) tallasEntrada["0XL"] = -item["0XL"];
+          if (item["1XL"] > 0) tallasEntrada["1XL"] = -item["1XL"];
+          datos.fechaEdicion = fechaAjuste;
+          datos.historial = [...item.historial, { fecha: fechaAjuste, tipo: "ajuste", tallas: tallasEntrada, nota: "Migración: 0XL/1XL fusionadas en XL" }];
+        }
+        await updateDoc(doc(db, "prendas", item.id), datos);
+      }
+      notificar(`✅ ${plan.length} prenda(s) migrada(s). Ya podés borrar este tab.`);
+      setPlan([]);
+    } catch (e) {
+      notificar("❌ Error al migrar: " + e.message, true);
+    } finally {
+      setEjecutando(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 700, margin: "0 auto", paddingBottom: 80 }}>
+      <p style={{ fontSize: 13, color: "#999", marginBottom: 20 }}>
+        Fusiona el stock de 0XL y 1XL dentro de XL en cada prenda, y limpia esas claves (más 5XL, que hoy no tiene stock) para dejar el set de tallas plus en XL, 2XL, 3XL, 4XL.
+      </p>
+
+      <button onClick={analizar} disabled={analizando}
+        style={{ width: "100%", padding: 16, background: analizando ? "#ccc" : "linear-gradient(135deg, #8B1A4D, #C2185B)", color: "white", border: "none", borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: analizando ? "not-allowed" : "pointer", marginBottom: 20 }}>
+        {analizando ? "⏳ Analizando..." : "🔍 Revisar prendas afectadas"}
+      </button>
+
+      {plan && (
+        plan.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 20px", background: "white", borderRadius: 16, border: "1px dashed #EDD9E8" }}>
+            <p style={{ fontSize: 14, color: "#4CAF50", fontWeight: 700 }}>✅ Nada por migrar — no hay prendas con 0XL, 1XL o 5XL.</p>
+          </div>
+        ) : (
+          <>
+            <div style={{ background: "white", borderRadius: 16, border: "1px solid #F5E6EE", overflow: "hidden", marginBottom: 16 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: "#FAF7F4" }}>
+                    <th style={{ textAlign: "left", padding: "8px 10px", color: "#7B4F6A" }}>Código</th>
+                    <th style={{ padding: "8px 6px", color: "#7B4F6A" }}>0XL</th>
+                    <th style={{ padding: "8px 6px", color: "#7B4F6A" }}>1XL</th>
+                    <th style={{ padding: "8px 6px", color: "#7B4F6A" }}>XL antes</th>
+                    <th style={{ padding: "8px 6px", color: "#7B4F6A" }}>XL después</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {plan.map((f) => (
+                    <tr key={f.id} style={{ borderTop: "1px solid #F5E6EE" }}>
+                      <td style={{ padding: "8px 10px", fontWeight: 700, color: "#1C0F17" }}>{f.codigo}</td>
+                      <td style={{ padding: "8px 6px", textAlign: "center" }}>{f["0XL"]}</td>
+                      <td style={{ padding: "8px 6px", textAlign: "center" }}>{f["1XL"]}</td>
+                      <td style={{ padding: "8px 6px", textAlign: "center" }}>{f.xlAntes}</td>
+                      <td style={{ padding: "8px 6px", textAlign: "center", fontWeight: 700, color: "#8B1A4D" }}>{f.xlDespues}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button onClick={ejecutar} disabled={ejecutando}
+              style={{ width: "100%", padding: 16, background: ejecutando ? "#ccc" : "linear-gradient(135deg, #C62828, #E53935)", color: "white", border: "none", borderRadius: 16, fontSize: 15, fontWeight: 800, cursor: ejecutando ? "not-allowed" : "pointer" }}>
+              {ejecutando ? "⏳ Migrando..." : `🚀 Ejecutar migración en ${plan.length} prenda(s)`}
+            </button>
+          </>
+        )
+      )}
+
+      <Toast msg={msgOk} />
+      <Toast msg={msgError} error />
     </div>
   );
 }
@@ -763,12 +983,14 @@ export default function Configuracion() {
         <button onClick={() => setTab("ofertas")} style={botonEstilo(tab === "ofertas")}>🔥 Ofertas</button>
         <button onClick={() => setTab("categorias")} style={botonEstilo(tab === "categorias")}>🎨 Categorías</button>
         <button onClick={() => setTab("almacenamiento")} style={botonEstilo(tab === "almacenamiento")}>📊 Almacenamiento</button>
+        <button onClick={() => setTab("migracion")} style={botonEstilo(tab === "migracion")}>🧵 Migración tallas</button>
       </div>
 
       {tab === "banner" && <BannerTab />}
       {tab === "ofertas" && <OfertasTab />}
       {tab === "categorias" && <CategoriasTab />}
       {tab === "almacenamiento" && <AlmacenamientoTab />}
+      {tab === "migracion" && <MigracionTallasTab />}
     </div>
   );
 }

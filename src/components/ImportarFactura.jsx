@@ -12,7 +12,7 @@ La factura tiene este formato:
 - SKU: código único del producto (alfanumérico, puede aparecer como "Ref", "SKU", "Código" o similar)
 - Descripción: nombre de la prenda tal cual aparece
 - Cantidad: aparece con formato "x1", "x2", "x3" etc — extrae solo el número
-- Talla: ejemplos "XL", "1XL", "2XL", "S", "M" — respétalas exactamente como aparecen
+- Talla: ejemplos "XL", "2XL", "3XL", "S", "M" — respétalas exactamente como aparecen
 - Costo unitario: precio por unidad en pesos colombianos
 
 REGLA CRÍTICA: Si el mismo SKU aparece varias veces con distintas tallas, agrúpalas en UN SOLO objeto con array de tallas.
@@ -24,7 +24,7 @@ Responde ÚNICAMENTE con un JSON array, sin texto adicional, sin markdown:
     "descripcion": "Blusa manga larga estampada",
     "tallas": [
       {"talla": "XL", "cantidad": 2},
-      {"talla": "1XL", "cantidad": 1}
+      {"talla": "2XL", "cantidad": 1}
     ],
     "costoUnitario": 38000
   }
@@ -84,7 +84,11 @@ function extraerJSONArray(texto) {
   return null;
 }
 
-async function llamarGroq(base64, mediaType = "image/png") {
+function esperar(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function llamarGroq(base64, mediaType = "image/png", intento = 0) {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -106,7 +110,13 @@ async function llamarGroq(base64, mediaType = "image/png") {
   });
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(err.error?.message || `HTTP ${res.status}`);
+    const mensaje = err.error?.message || `HTTP ${res.status}`;
+    if (res.status === 429 && intento < 2) {
+      const espera = mensaje.match(/try again in ([\d.]+)s/)?.[1];
+      await esperar((espera ? parseFloat(espera) : 3) * 1000 + 500);
+      return llamarGroq(base64, mediaType, intento + 1);
+    }
+    throw new Error(mensaje);
   }
   const data = await res.json();
   const texto = data.choices?.[0]?.message?.content?.trim();

@@ -4,7 +4,7 @@
 
 :root {
   --rosa:      #C2185B;
-  --rosa-deep: #880E4F;
+  --rosa-deep: var(--c-vino);
   --rosa-soft: #F8BBD9;
   --rosa-pale: #FDF0F6;
   --creme:     #FAF7F4;

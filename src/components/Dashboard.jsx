@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { fmt, fmtNum, StatCard, Icon, nombreDe } from "../utils.jsx";
+import PanelEquilibrioInventario from "./PanelEquilibrioInventario.jsx";
 
 // ── GRÁFICA CON TOOLTIP TÁCTIL ─────────────────────────────────────────────
 const CustomLineChart = ({ data }) => {
@@ -118,7 +119,7 @@ const HoraBar = ({ hora, valor, max }) => (
 );
 
 // ════════════════════════════════════════════════════════════════════════════
-export default function Dashboard({ prendas, ventas, facturas = [] }) {
+export default function Dashboard({ prendas, ventas, facturas = [], onIrAInventario }) {
   const [filtroTiempo, setFiltroTiempo] = useState("semana");
   const [notas, setNotas]               = useState([]);
   const [notaTexto, setNotaTexto]       = useState("");
@@ -366,6 +367,9 @@ export default function Dashboard({ prendas, ventas, facturas = [] }) {
           <p style={{ fontSize: 10, color: "var(--mid)", marginTop: 4 }}>Saludable en ropa: 40%+</p>
         </div>
       </div>
+
+      {/* ── EQUILIBRIO DE INVENTARIO ── */}
+      <PanelEquilibrioInventario prendas={prendas} ventas={ventas} onIrAInventario={onIrAInventario} />
 
       {/* ── MÉTRICAS MENSUALES ── */}
       <h3 style={{ fontSize: 12, color: "var(--mid)", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", margin: "0 0 -8px" }}>Este mes</h3>

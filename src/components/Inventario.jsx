@@ -1,14 +1,19 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { fmt, fmtNum, parseNum, comprimirImagen, Icon, fmtFecha, nombreDe, ofertaVigente } from "../utils.jsx";
 import ImportarFactura from "./ImportarFactura.jsx";
 import ColaBorradores from "./ColaBorradores.jsx";
 
-export default function Inventario({ prendas, setPrendas }) {
+export default function Inventario({ prendas, setPrendas, filtroInicial }) {
   const [busqueda, setBusqueda] = useState("");
   const [filtroTiempo, setFiltroTiempo] = useState("todo");
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
+
+  // Llegada desde el panel de equilibrio del Dashboard con una categoría a filtrar.
+  useEffect(() => {
+    if (filtroInicial?.categoria) setFiltroCategoria(filtroInicial.categoria);
+  }, [filtroInicial]);
   const [filtroStock, setFiltroStock] = useState("todas");
   const [ordenarPor, setOrdenarPor] = useState("fecha");
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -27,11 +32,11 @@ export default function Inventario({ prendas, setPrendas }) {
     codigo: "", descripcion: "", nombre: "", caracteristicas: [], sku: "", stockMinimo: "1",
     costoCompra: "", precioVenta: "", categoria: "Blusa", imagen: "", imagenes: [],
     ofertaActiva: false, precioOferta: "", ofertaHasta: "",
-    tallas: { "XS": "", "S": "", "M": "", "L": "", "XL": "", "0XL": "", "1XL": "", "2XL": "", "3XL": "", "4XL": "", "5XL": "" }
+    tallas: { "XS": "", "S": "", "M": "", "L": "", "XL": "", "2XL": "", "3XL": "", "4XL": "" }
   };
   const [form, setForm] = useState(formBase);
 
-  const ordenTallas = ["XS", "S", "M", "L", "XL", "0XL", "1XL", "2XL", "3XL", "4XL", "5XL"];
+  const ordenTallas = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"];
   const categorias = ["Blusa", "Camiseta", "Pantalón", "Vestido", "Conjunto", "Falda", "Cardigan", "Short", "Otro"];
 
   const filtradas = useMemo(() => {
@@ -219,7 +224,7 @@ export default function Inventario({ prendas, setPrendas }) {
   };
 
   const abrirEdicion = (p) => {
-    let tallasForm = { "XS": "", "S": "", "M": "", "L": "", "XL": "", "0XL": "", "1XL": "", "2XL": "", "3XL": "", "4XL": "", "5XL": "" };
+    let tallasForm = { "XS": "", "S": "", "M": "", "L": "", "XL": "", "2XL": "", "3XL": "", "4XL": "" };
     if (p.stockPorTalla) {
       Object.keys(p.stockPorTalla).forEach(k => { if (tallasForm[k] !== undefined) tallasForm[k] = String(p.stockPorTalla[k]); });
     } else if (p.talla && tallasForm[p.talla] !== undefined) {
@@ -239,7 +244,7 @@ export default function Inventario({ prendas, setPrendas }) {
   };
 
   const duplicarPrenda = (p) => {
-    let tallasForm = { "XS": "", "S": "", "M": "", "L": "", "XL": "", "0XL": "", "1XL": "", "2XL": "", "3XL": "", "4XL": "", "5XL": "" };
+    let tallasForm = { "XS": "", "S": "", "M": "", "L": "", "XL": "", "2XL": "", "3XL": "", "4XL": "" };
     if (p.stockPorTalla) {
       Object.keys(p.stockPorTalla).forEach(k => { if (tallasForm[k] !== undefined) tallasForm[k] = String(p.stockPorTalla[k]); });
     }
