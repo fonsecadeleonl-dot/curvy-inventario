@@ -315,3 +315,17 @@ section{padding-block: var(--seccion-y);}
 .fab-wa svg{width:28px;height:28px}
 /* Alternativa válida: dejarlo en verde WhatsApp #25D366 por reconocimiento.
    Lo que NO se hace es tener los dos verdes/magentas mezclados en la misma pantalla. */
+
+/* ============================================================
+   AJUSTES MÓVIL — topbar más compacta, íconos con área táctil
+   real, WhatsApp del header oculto (ya está el botón flotante)
+   ============================================================ */
+@media (max-width: 768px){
+  .topbar{ height:auto; padding-block: var(--sp-2); }
+  .topbar__item{ font-size: 11px; }
+
+  .header-icon-btn{ width:44px !important; height:44px !important; }
+  .header-wa-link{ display:none !important; }
+
+  .seccion-head{ flex-wrap: wrap; }
+}

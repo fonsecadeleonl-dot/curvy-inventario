@@ -219,17 +219,17 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: 20, marginLeft: "auto", flexShrink: 0 }}>
-            <button onClick={() => setBuscadorAbierto((v) => !v)}
+            <button onClick={() => setBuscadorAbierto((v) => !v)} className="header-icon-btn"
               style={{ width: 40, height: 40, borderRadius: "50%", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.15s", color: "var(--text)" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "#FFF5F7"} onMouseLeave={(e) => e.currentTarget.style.background = "none"}>
               <SearchIcon size={20} />
             </button>
-            <a href={waLink("")} target="_blank" rel="noopener noreferrer"
+            <a href={waLink("")} target="_blank" rel="noopener noreferrer" className="header-icon-btn header-wa-link"
               style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "background 0.15s", color: "var(--text)" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "#FFF5F7"} onMouseLeave={(e) => e.currentTarget.style.background = "none"}>
               <WhatsappIcon size={20} />
             </a>
-            <button onClick={onCartClick}
+            <button onClick={onCartClick} className="header-icon-btn"
               style={{ position: "relative", width: 40, height: 40, borderRadius: "50%", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background 0.15s", color: "var(--text)" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "#FFF5F7"} onMouseLeave={(e) => e.currentTarget.style.background = "none"}>
               <CartIcon size={20} />
@@ -384,13 +384,13 @@ function HeroCarousel({ slides, onVerCatalogo }) {
           </div>
         );
       })}
-      <button onClick={() => setI((v) => (v - 1 + lista.length) % lista.length)}
+      <button onClick={() => setI((v) => (v - 1 + lista.length) % lista.length)} className="hero-arrow"
         style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", zIndex: 10, background: "rgba(255,255,255,0.25)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", width: 36, height: 36, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, lineHeight: 1 }}>‹</button>
-      <button onClick={() => setI((v) => (v + 1) % lista.length)}
+      <button onClick={() => setI((v) => (v + 1) % lista.length)} className="hero-arrow"
         style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", zIndex: 10, background: "rgba(255,255,255,0.25)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", width: 36, height: 36, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, lineHeight: 1 }}>›</button>
       <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", gap: 8 }}>
         {lista.map((_, idx) => (
-          <button key={idx} onClick={() => setI(idx)} style={{ width: 8, height: 8, borderRadius: "50%", background: idx === i ? "var(--brand)" : "var(--c-arena)", opacity: idx === i ? 1 : 0.5, border: "none", cursor: "pointer", transition: "all 0.3s", padding: 0 }} />
+          <button key={idx} onClick={() => setI(idx)} className="hero-dot" aria-current={idx === i} style={{ width: 8, height: 8, borderRadius: "50%", background: idx === i ? "var(--brand)" : "var(--c-arena)", opacity: idx === i ? 1 : 0.5, border: "none", cursor: "pointer", transition: "all 0.3s", padding: 0, position: "relative" }} />
         ))}
       </div>
       <style>{`
@@ -402,15 +402,20 @@ function HeroCarousel({ slides, onVerCatalogo }) {
            SOLO detrás del texto, ajustado a su propio tamaño. */
         @media (max-width: 768px) {
           .hero__caja-texto {
-            left: 20px !important;
-            right: 20px !important;
-            bottom: 28px !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
             max-width: none !important;
-            background: rgba(28,22,20,0.42);
-            backdrop-filter: blur(6px);
-            border-radius: 16px;
-            padding: 16px 18px;
+            background: linear-gradient(to top, rgba(20,6,14,0.88) 0%, rgba(20,6,14,0.62) 45%, rgba(20,6,14,0) 100%);
+            backdrop-filter: none;
+            border-radius: 0;
+            padding: 72px 20px 46px;
           }
+          .hero__titulo { font-size: 26px !important; letter-spacing: 0.02em; }
+          .hero-arrow { display: none !important; }
+          .hero-dot { width: 7px !important; height: 7px !important; }
+          .hero-dot[aria-current="true"] { width: 20px !important; border-radius: 999px !important; }
+          .hero-dot::before { content: ""; position: absolute; inset: -14px; }
         }
       `}</style>
     </div>
@@ -728,7 +733,7 @@ function SeccionGridEditorial({ titulo, prendas, banner, bg = "#FAF7F4", onCardC
   return (
     <section style={{ padding: "0 0 28px", background: bg }}>
       <BannerOfertas banner={banner} />
-      <div className="of-gutter" style={{ paddingTop: hayBanner ? 28 : 40, paddingBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div className="of-gutter seccion-head" style={{ paddingTop: hayBanner ? 28 : 40, paddingBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", fontWeight: 700, color: "#1C0F17", margin: 0 }}>{titulo}</h2>
         {onVerTodas && <button onClick={onVerTodas} className="btn btn--texto" style={{ flexShrink: 0, marginTop: 4 }}>{verTodasTexto}</button>}
       </div>
@@ -745,7 +750,7 @@ function BotonWhatsappFlotante() {
   useEffect(() => { const t = setTimeout(() => setVisible(true), 2000); return () => clearTimeout(t); }, []);
   return (
     <div onClick={() => window.open(waLink("Hola Curvy Vup! 💕 Quiero ver el catálogo de ropa plus size"), "_blank")}
-      style={{ position: "fixed", bottom: 24, right: 20, zIndex: 9998, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: visible ? 1 : 0, transform: visible ? "scale(1)" : "scale(0)", transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
+      style={{ position: "fixed", bottom: "calc(24px + env(safe-area-inset-bottom, 0px))", right: 20, zIndex: 9998, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: visible ? 1 : 0, transform: visible ? "scale(1)" : "scale(0)", transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
       <div style={{ background: "#fff", borderRadius: "12px 12px 4px 12px", padding: "6px 12px", fontSize: 11, fontWeight: 600, color: "#1a1a1a", boxShadow: "0 2px 12px rgba(0,0,0,0.15)", whiteSpace: "nowrap", animation: "bounce-wa 2s infinite" }}>💬 ¿Necesitas ayuda?</div>
       <div style={{ position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(37,211,102,0.3)", animation: "pulse-wa 2s infinite" }} />
