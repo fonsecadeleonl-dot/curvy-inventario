@@ -179,10 +179,10 @@ section{padding-block: var(--seccion-y);}
    HERO
    ============================================================ */
 .hero{
-  height: 72vh; min-height: 520px; max-height: 760px;
+  height: 72vh; height: 72dvh; min-height: 520px; max-height: 760px;
   position: relative; display:flex; align-items:center;
 }
-@media (max-width:768px){ .hero{height:68vh;min-height:460px} }
+@media (max-width:768px){ .hero{height:68vh;height:68dvh;min-height:460px} }
 .hero__media{position:absolute;inset:0;object-fit:cover;width:100%;height:100%}
 .hero__velo{                    /* solo del lado del texto, no sobre toda la foto */
   position:absolute;inset:0;

@@ -116,7 +116,7 @@ function LoaderReloj() {
   return (
     <div style={{ position: "fixed", inset: 0, background: "linear-gradient(160deg, #FFF5F7 0%, #FCE4EC 50%, #F8BBD0 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 9999, fontFamily: "'DM Sans', sans-serif", overflow: "hidden" }}>
       <style>{`
-        @keyframes flotar { 0% { transform: translateY(0px) rotate(0deg); } 25% { transform: translateY(-6px) rotate(0deg); } 50% { transform: translateY(-4px) rotate(180deg); } 75% { transform: translateY(-8px) rotate(180deg); } 100% { transform: translateY(0px) rotate(360deg); } }
+        @keyframes flotar { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
         @keyframes puntito { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.5); opacity: 1; } }
       `}</style>
       <div style={{ position: "absolute", top: -100, right: -100, width: 350, height: 350, borderRadius: "50%", background: "rgba(194,24,91,0.05)", pointerEvents: "none" }} />
