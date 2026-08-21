@@ -328,8 +328,7 @@ function Navbar({ cartCount, onCartClick, busqueda, onBusqueda, prendas = [], on
           .nav-desktop { display: none !important; }
           .hamburguesa { display: flex !important; }
           .header { height: 64px; }
-          .header-inner { position: relative; }
-          .header-logo { position: absolute; left: 50%; transform: translateX(-50%); }
+          .header-logo { flex: 1; justify-content: center; white-space: nowrap; min-width: 0; overflow: hidden; }
         }
       `}</style>
     </div>
