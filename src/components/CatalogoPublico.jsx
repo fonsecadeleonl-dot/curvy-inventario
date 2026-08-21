@@ -109,13 +109,12 @@ function LoaderReloj() {
       <style>{`
         @keyframes flotar { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
         @keyframes puntito { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.5); opacity: 1; } }
-        @keyframes arena-arriba { from { y: 12px; height: 58px; } to { y: 60px; height: 10px; } }
-        @keyframes arena-abajo { from { y: 108px; height: 10px; } to { y: 60px; height: 58px; } }
-        @keyframes arena-hilo { 0%, 6% { opacity: 0; } 8% { opacity: 0.7; } 92% { opacity: 0.7; } 94%, 100% { opacity: 0; } }
-        @keyframes arena-hilo-y { from { y2: 65px; } to { y2: 75px; } }
-        .arena-arriba-rect { animation: arena-arriba 5s linear infinite; }
-        .arena-abajo-rect { animation: arena-abajo 5s linear infinite; }
-        .arena-hilo-linea { animation: arena-hilo 5s linear infinite, arena-hilo-y 5s linear infinite; }
+        @keyframes arena-arriba { from { transform: scaleY(1); } to { transform: scaleY(0.1724); } }
+        @keyframes arena-abajo { from { transform: scaleY(0.1724); } to { transform: scaleY(1); } }
+        @keyframes arena-hilo { 0%, 6% { opacity: 0; transform: scaleY(0.333); } 8% { opacity: 0.7; } 92% { opacity: 0.7; transform: scaleY(1); } 94%, 100% { opacity: 0; transform: scaleY(1); } }
+        .arena-arriba-rect { transform-origin: 40px 70px; animation: arena-arriba 5s linear infinite; }
+        .arena-abajo-rect { transform-origin: 40px 118px; animation: arena-abajo 5s linear infinite; }
+        .arena-hilo-linea { transform-origin: 40px 60px; animation: arena-hilo 5s linear infinite; }
       `}</style>
       <div style={{ position: "absolute", top: -100, right: -100, width: 350, height: 350, borderRadius: "50%", background: "rgba(194,24,91,0.05)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: -80, left: -80, width: 280, height: 280, borderRadius: "50%", background: "rgba(139,26,77,0.04)", pointerEvents: "none" }} />
@@ -141,9 +140,9 @@ function LoaderReloj() {
           <line x1="66" y1="8" x2="66" y2="116" stroke="var(--c-vino)" strokeWidth="4" strokeLinecap="round" />
           <path d="M14 12 L66 12 L40 60 Z" fill="rgba(194,24,91,0.08)" />
           <path d="M14 108 L66 108 L40 60 Z" fill="rgba(194,24,91,0.08)" />
-          <g clipPath="url(#clipArriba)"><rect className="arena-arriba-rect" x="14" width="52" fill="url(#gradArena)" /></g>
-          <g clipPath="url(#clipAbajo)"><rect className="arena-abajo-rect" x="14" width="52" fill="url(#gradArena)" /></g>
-          <line className="arena-hilo-linea" x1="40" y1="60" x2="40" stroke="#C2185B" strokeWidth="1.5" strokeLinecap="round" />
+          <g clipPath="url(#clipArriba)"><rect className="arena-arriba-rect" x="14" y="12" width="52" height="58" fill="url(#gradArena)" /></g>
+          <g clipPath="url(#clipAbajo)"><rect className="arena-abajo-rect" x="14" y="60" width="52" height="58" fill="url(#gradArena)" /></g>
+          <line className="arena-hilo-linea" x1="40" y1="60" x2="40" y2="75" stroke="#C2185B" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M22 18 L30 30" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" />
           <path d="M22 90 L30 100" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" />
         </svg>
