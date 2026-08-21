@@ -44,16 +44,6 @@ function PrecioConOferta({ p, fontSize = 15, fontWeight = 800, colorBase = "var(
   );
 }
 
-/* ── BADGE DE DESCUENTO SOBRE LA FOTO (pill sólido) ─── */
-function BadgeDescuentoFoto({ p }) {
-  if (!ofertaVigente(p)) return null;
-  return (
-    <div className="badge-oferta-pill">
-      <span className="boe-num">-{porcentajeDescuento(p)}</span><span className="boe-pct">%</span>
-    </div>
-  );
-}
-
 /* ── DOTS DE FOTOS (indicador de cantidad, interactivo o solo visual) ─── */
 function DotsFotos({ cantidad, activo = 0, arriba = false }) {
   if (cantidad <= 1) return null;
@@ -486,19 +476,16 @@ function SeccionMasPedidas({ prendas, onCardClick }) {
           {prendas.slice(0, 3).map((p) => {
             const img = p.imagenes?.[0] || p.imagen;
             return (
-              <div key={p.id} onClick={() => onCardClick(p)} className="tarjeta-hover img-hover-wrap" style={{ borderRadius: 20, overflow: "hidden", position: "relative", aspectRatio: "3/4", cursor: "pointer", boxShadow: "0 8px 32px rgba(139,26,77,0.18)" }}>
-                {img ? <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, var(--c-vino), #C2185B)" }} />}
-                <span style={{ position: "absolute", top: 12, right: 14, fontSize: 20, zIndex: 2 }}>✨</span>
-                {!ofertaVigente(p) && <span style={{ position: "absolute", top: 12, left: 14, fontSize: 16, zIndex: 2 }}>🌸</span>}
-                <BadgeDescuentoFoto p={p} />
-                <DotsFotos cantidad={p.imagenes?.length || 0} arriba />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(139,26,77,0.88) 0%, rgba(139,26,77,0.15) 55%, transparent 100%)" }} />
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px", zIndex: 2 }}>
-                  <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
-                  <p style={{ margin: "0 0 12px" }}><PrecioConOferta p={p} fontSize={18} oscuro compacto /></p>
-                  <button onClick={(e) => { e.stopPropagation(); abrirWhatsappProducto(p); }} style={{ width: "100%", padding: "10px 0", borderRadius: 14, background: "#fff", color: "var(--c-vino)", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Pedir 💕</button>
+              <div key={p.id} onClick={() => onCardClick(p)} className="producto tarjeta-hover" style={{ cursor: "pointer", minWidth: 0 }}>
+                <div className="producto__figura img-hover-wrap" style={{ position: "relative" }}>
+                  {img ? <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, var(--c-vino), #C2185B)" }} />}
+                  <DotsFotos cantidad={p.imagenes?.length || 0} arriba />
                 </div>
+                <p className="producto__categoria">{p.categoria}</p>
+                <p className="producto__nombre">{nombreDe(p)}</p>
+                <p className="producto__precio" style={{ margin: 0 }}><PrecioConOferta p={p} fontSize={16} compacto /></p>
+                <button onClick={(e) => { e.stopPropagation(); abrirWhatsappProducto(p); }} className="btn btn--primario" style={{ width: "100%", padding: "10px 0", fontSize: 12, marginTop: 10 }}>Pedir</button>
               </div>
             );
           })}
@@ -521,7 +508,7 @@ function SeccionCTA({ onVerCatalogo }) {
         <div style={{ flex: "1 1 240px", display: "flex", flexDirection: "column", gap: 12 }}>
           <p style={{ color: "rgba(255,255,255,0.88)", margin: 0, fontSize: 14 }}>100% seleccionado para ti</p>
           <p style={{ color: "rgba(255,255,255,0.88)", margin: 0, fontSize: 14 }}>Envíos a toda Colombia</p>
-          <button onClick={onVerCatalogo} className="btn-hero" style={{ background: "#fff", color: "var(--c-vino)", border: "none", borderRadius: 50, padding: "13px 28px", fontSize: 14, fontWeight: 800, cursor: "pointer", width: "fit-content", boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}>
+          <button onClick={onVerCatalogo} className="btn btn--claro" style={{ width: "fit-content", boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}>
             Ver todo el catálogo →
           </button>
         </div>
@@ -626,24 +613,23 @@ function TarjetaCatalogo({ p, onClick }) {
     // min-width: 0 es obligatorio en items de grid: sin esto, un nombre largo con whiteSpace:"nowrap"
     // (ej. productos sin campo "nombre" que caen a "descripcion") expande la columna por su ancho
     // mínimo intrínseco y rompe el grid, sin importar cuántos caracteres tenga.
-    <div onClick={onClick} className="tarjeta-hover" style={{ cursor: "pointer", minWidth: 0 }}>
-      <div style={{ position: "relative", width: "100%", aspectRatio: "3 / 4", overflow: "hidden", background: "#FAFAFA", touchAction: "pan-y" }}
+    <div onClick={onClick} className="producto tarjeta-hover" style={{ cursor: "pointer", minWidth: 0 }}>
+      <div className="producto__figura" style={{ position: "relative", touchAction: "pan-y" }}
         onMouseEnter={() => setHoverActivo(true)} onMouseLeave={() => setHoverActivo(false)}
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {imagenes.length > 0 ? imagenes.map((src, i) => (
-          <img key={i} src={src} alt={nombreDe(p)} loading="lazy" decoding="async"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", opacity: i === indiceMostrado ? 1 : 0, transition: "opacity 250ms ease", pointerEvents: "none" }} />
+          <img key={i} src={src} alt={nombreDe(p)} loading="lazy" decoding="async" className="producto__img"
+            style={{ position: "absolute", inset: 0, objectPosition: "top", opacity: i === indiceMostrado ? 1 : 0, transition: "opacity 250ms ease", pointerEvents: "none" }} />
         )) : (
-          <div style={{ position: "absolute", inset: 0, background: "#F0F0F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🪡</div>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🪡</div>
         )}
       </div>
-      <div style={{ padding: "12px 2px 0" }}>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", letterSpacing: 0.4, textTransform: "uppercase", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombreDe(p)}</p>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
-          {enOferta && <span style={{ fontSize: 12, color: "#B0B0B0", textDecoration: "line-through" }}>{fmt(p.precioVenta)}</span>}
-          {enOferta && <span style={{ fontSize: 10, fontWeight: 700, color: "#C2185B", background: "#FCE8EF", padding: "2px 6px", borderRadius: 4 }}>-{porcentajeDescuento(p)}%</span>}
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>{fmt(enOferta ? p.precioOferta : p.precioVenta)}</span>
-        </div>
+      <p className="producto__categoria">{p.categoria}</p>
+      <p className="producto__nombre">{nombreDe(p)}</p>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+        {enOferta && <span className="producto__precio--antes">{fmt(p.precioVenta)}</span>}
+        <span className={enOferta ? "producto__precio producto__precio--oferta" : "producto__precio"}>{fmt(enOferta ? p.precioOferta : p.precioVenta)}</span>
+        {enOferta && <span style={{ fontSize: 10, fontWeight: 700, color: "var(--action)", background: "var(--bg-alt)", padding: "2px 6px", borderRadius: "var(--r-chip)" }}>-{porcentajeDescuento(p)}%</span>}
       </div>
     </div>
   );
@@ -655,7 +641,7 @@ function BarraProgresoFotos({ cantidad, activo = 0 }) {
   return (
     <div style={{ display: "flex", gap: 3, padding: "6px 1px 0" }}>
       {Array.from({ length: cantidad }).map((_, i) => (
-        <span key={i} style={{ flex: 1, height: 2.5, borderRadius: 2, background: i === activo ? "#8B1A4A" : "#FCE8EF", transition: "background 200ms ease" }} />
+        <span key={i} style={{ flex: 1, height: 2.5, borderRadius: 2, background: i === activo ? "var(--brand)" : "var(--bg-alt)", transition: "background 200ms ease" }} />
       ))}
     </div>
   );
@@ -677,25 +663,23 @@ function TarjetaEditorial({ p, onClick, mostrarNombre = false, mostrarContador =
   };
 
   return (
-    <div onClick={onClick} className="tarjeta-hover" style={{ cursor: "pointer", minWidth: 0 }}>
-      <div style={{ position: "relative", width: "100%", paddingTop: "125%", overflow: "hidden", background: "#FAFAFA", touchAction: "pan-y" }}
+    <div onClick={onClick} className="producto tarjeta-hover" style={{ cursor: "pointer", minWidth: 0 }}>
+      <div className="producto__figura" style={{ position: "relative", touchAction: "pan-y" }}
         onMouseEnter={() => setHoverActivo(true)} onMouseLeave={() => setHoverActivo(false)}
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {imagenes.length > 0 ? imagenes.map((src, i) => (
-          <img key={i} src={src} alt={p.categoria || nombreDe(p)} loading="lazy" decoding="async"
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", opacity: i === indiceMostrado ? 1 : 0, transition: "opacity 250ms ease", pointerEvents: "none" }} />
+          <img key={i} src={src} alt={p.categoria || nombreDe(p)} loading="lazy" decoding="async" className="producto__img"
+            style={{ position: "absolute", top: 0, left: 0, objectPosition: "top", opacity: i === indiceMostrado ? 1 : 0, transition: "opacity 250ms ease", pointerEvents: "none" }} />
         )) : (
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #FCE4EC, #F8BBD0)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🪡</div>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🪡</div>
         )}
       </div>
       <BarraProgresoFotos cantidad={imagenes.length} activo={indiceMostrado} />
-      <div style={{ padding: "10px 1px 0" }}>
-        <span style={{ fontSize: 10, color: "#8A8A8A", textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>{p.categoria}</span>
-        {mostrarNombre && (
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", margin: "4px 0 0", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
-        )}
-        <p style={{ margin: "4px 0 0" }}><PrecioConOferta p={p} fontSize={15} colorBase="#8B1A4A" compacto mostrarContador={mostrarContador} /></p>
-      </div>
+      <p className="producto__categoria">{p.categoria}</p>
+      {mostrarNombre && (
+        <p className="producto__nombre" style={{ lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{nombreDe(p)}</p>
+      )}
+      <p className="producto__precio" style={{ margin: "var(--sp-1) 0 0" }}><PrecioConOferta p={p} fontSize={15} colorBase="var(--c-vino)" compacto mostrarContador={mostrarContador} /></p>
     </div>
   );
 }
@@ -750,9 +734,9 @@ function SeccionGridEditorial({ titulo, prendas, banner, bg = "#FAF7F4", onCardC
       <BannerOfertas banner={banner} />
       <div className="of-gutter" style={{ paddingTop: hayBanner ? 28 : 40, paddingBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", fontWeight: 700, color: "#1C0F17", margin: 0 }}>{titulo}</h2>
-        {onVerTodas && <button onClick={onVerTodas} style={{ background: "none", border: "none", color: "#C2185B", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline", textDecorationColor: "#F5C6D8", flexShrink: 0, marginTop: 4 }}>{verTodasTexto}</button>}
+        {onVerTodas && <button onClick={onVerTodas} className="btn btn--texto" style={{ flexShrink: 0, marginTop: 4 }}>{verTodasTexto}</button>}
       </div>
-      <div className="of-editorial-grid of-gutter">
+      <div className="grilla of-gutter">
         {prendas.map((p) => <TarjetaEditorial key={p.id} p={p} onClick={() => onCardClick(p)} mostrarNombre={mostrarNombre} mostrarContador={mostrarContador} />)}
       </div>
     </section>
@@ -1289,31 +1273,20 @@ function DetalleProducto({ prenda, onVolver, onCargarProducto, todasLasPrendas }
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>También te puede gustar</h2>
                 <p style={{ fontSize: 11, color: "#999", margin: 0, letterSpacing: 1, textTransform: "uppercase" }}>PRENDAS SELECCIONADAS PARA TI</p>
               </div>
-              <button onClick={onVolver} style={{ background: "none", border: "2px solid #C2185B", color: "#C2185B", borderRadius: 20, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Ver todo →</button>
+              <button onClick={onVolver} className="btn btn--secundario" style={{ padding: "8px 20px", fontSize: 13 }}>Ver todo →</button>
             </div>
             <div className="relacionadas-grid">
-              {relacionados.map((p, i) => {
+              {relacionados.map((p) => {
                 const img = p.imagenes?.[0] || p.imagen;
-                const s = Number(p.stock || 0);
                 return (
-                  <div key={p.id} onClick={() => { onCargarProducto?.(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="tarjeta-hover"
-                    style={{ background: "white", borderRadius: 16, overflow: "hidden", cursor: "pointer", border: "1px solid #F5E6EE", boxShadow: "0 2px 12px rgba(139,26,77,0.06)", position: "relative" }}>
-                    {!ofertaVigente(p) && (i === 0 ? <div style={{ position: "absolute", top: 10, left: 10, background: "#C2185B", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>🔥 POPULAR</div>
-                      : i === 1 ? <div style={{ position: "absolute", top: 10, left: 10, background: "var(--c-vino)", color: "white", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, zIndex: 1 }}>✨ NUEVO</div> : null)}
-                    {s <= 2 && s > 0 && <div style={{ position: "absolute", top: 10, left: i < 2 ? "auto" : 10, right: i < 2 ? 10 : "auto", background: "#FCE4EC", color: "#C2185B", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 20, zIndex: 1, border: "1px solid #F48FB1" }}>⚠️ ÚLTIMA</div>}
-                    <div className="img-hover-wrap" style={{ position: "relative", paddingTop: "120%", overflow: "hidden", background: "#FAFAFA" }}>
+                  <div key={p.id} onClick={() => { onCargarProducto?.(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="producto tarjeta-hover" style={{ cursor: "pointer" }}>
+                    <div className="producto__figura img-hover-wrap" style={{ position: "relative" }}>
                       {img && <ImagenTarjetaHover imagenes={p.imagenes} alt={nombreDe(p)} imgStyle={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />}
-                      <BadgeDescuentoFoto p={p} />
                       <DotsFotos cantidad={p.imagenes?.length || 0} />
                     </div>
-                    <div style={{ padding: "10px 12px 14px" }}>
-                      <span style={{ fontSize: 10, color: "#C2185B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.8px" }}>{p.categoria}</span>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", margin: "3px 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, minHeight: 32 }}>{nombreDe(p)}</p>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <PrecioConOferta p={p} fontSize={15} colorBase="#C2185B" compacto />
-                        <span style={{ fontSize: 10, color: "#999" }}>Ver →</span>
-                      </div>
-                    </div>
+                    <p className="producto__categoria">{p.categoria}</p>
+                    <p className="producto__nombre" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, minHeight: 32 }}>{nombreDe(p)}</p>
+                    <p className="producto__precio" style={{ margin: "var(--sp-1) 0 0" }}><PrecioConOferta p={p} fontSize={15} colorBase="var(--c-vino)" compacto /></p>
                   </div>
                 );
               })}
@@ -1662,7 +1635,7 @@ export default function CatalogoPublico() {
                 </div>
               ) : (
                 <>
-                  <div className="catalogo-grid-v2">
+                  <div className="grilla">
                     {ordenadas.slice(0, cantidadVisible).map((p) => (
                       <TarjetaCatalogo key={p.id} p={p} onClick={() => abrirProducto(p)} />
                     ))}
@@ -1726,19 +1699,10 @@ export default function CatalogoPublico() {
           .catalogo-btn-filtrar { display: none; }
         }
 
-        /* Mobile (<768) queda igual: 2 columnas, sin tocar. Desktop 768-1439: 3 col. Desktop grande 1440+: 4 col, gap más compacto. */
-        .catalogo-grid-v2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 14px; }
-        @media (min-width: 768px) { .catalogo-grid-v2 { grid-template-columns: repeat(3, 1fr); gap: 28px 20px; } }
-        @media (min-width: 1440px) { .catalogo-grid-v2 { grid-template-columns: repeat(4, 1fr); gap: 24px 18px; } }
-
         .catalogo-filtros-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9000; }
         .catalogo-filtros-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 85%; max-width: 340px; background: #fff; z-index: 9001; overflow-y: auto; padding: 20px; animation: catalogoPanelIn 0.25s ease; }
         @keyframes catalogoPanelIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         @media (min-width: 768px) { .catalogo-filtros-overlay, .catalogo-filtros-panel { display: none; } }
-
-        /* Grid exclusivo de "Ofertas de la Semana": fijo 2 (mobile) / 4 (desktop), sin auto-fill/minmax, sin max-width que la encoja */
-        .of-editorial-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px 16px; padding-bottom: 8px; }
-        @media (min-width: 768px) { .of-editorial-grid { grid-template-columns: repeat(4, 1fr); gap: 32px 24px; } }
 
         /* Padding lateral compartido entre encabezado y grilla de ofertas, para que queden alineados entre sí */
         .of-gutter { padding-left: 16px; padding-right: 16px; }
@@ -1784,17 +1748,6 @@ export default function CatalogoPublico() {
           .po-badge { font-size: 9px !important; padding: 1px 5px !important; }
           .po-tachado { font-size: 10px !important; }
         }
-
-        .badge-oferta-pill {
-          position: absolute; top: 0; left: 0; z-index: 3; pointer-events: none;
-          display: flex; align-items: baseline; gap: 1px;
-          background: #8B1A4A; color: #fff;
-          border-radius: 0 999px 999px 0;
-          padding: 6px 14px 6px 12px;
-          font-family: 'Playfair Display', serif;
-        }
-        .badge-oferta-pill .boe-num { font-size: 16px; font-style: italic; font-weight: 500; line-height: 1; }
-        .badge-oferta-pill .boe-pct { font-size: 11px; font-style: italic; font-weight: 500; line-height: 1; }
 
         .img-hover-wrap .img-b { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 250ms ease; }
         .img-hover-wrap .img-a { pointer-events: none; transition: opacity 250ms ease; }
